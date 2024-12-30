@@ -2,28 +2,28 @@
   "personas": [
     {
       "name": "Susan",
-      "incompatible_with": ["Mary"],
-      "unavailable_days": ["Monday"]
+      "incompatible_with": [],
+      "unavailable_days": []
     },
     {
       "name": "Mary",
       "incompatible_with": [],
-      "unavailable_days": ["Tuesday"]
+      "unavailable_days": []
     },
     {
       "name": "Charles",
       "incompatible_with": [],
-      "unavailable_days": ["Wednesday"]
+      "unavailable_days": []
     },
     {
       "name": "John",
       "incompatible_with": [],
-      "unavailable_days": ["Thursday"]
+      "unavailable_days": []
     },
     {
       "name": "Jane",
       "incompatible_with": [],
-      "unavailable_days": ["Friday"]
+      "unavailable_days": []
     },
     {
       "name": "Mica",

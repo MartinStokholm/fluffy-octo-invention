@@ -4,7 +4,7 @@ import random
 from datetime import datetime, timedelta
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, Border, PatternFill, Side
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
 def load_config(config_path):
@@ -38,6 +38,9 @@ def add_months(start_date, months):
     return datetime(year, month, day)
 
 def main():
+    # Define the order of days
+    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
     # Check for correct usage
     if len(sys.argv) < 3:
         print("Usage: python schedule.py YYYY-MM-DD number_of_months")
@@ -90,7 +93,7 @@ def main():
             
             # Ensure at least two candidates are available
             if len(candidates) < 2:
-                errors.append(f"{current.strftime('%Y-%m-%d')} ({current.strftime('%A')}): Not enough available nurses.")
+                errors.append(f"{current.strftime('%Y-%m-%d')} ({current.strftime('%A')}): Not enough available people.")
                 assignments.append({
                     'date': current.strftime('%Y-%m-%d'),
                     'person1': "Unassigned",
@@ -107,7 +110,7 @@ def main():
                         possible_pairs.append((candidates[i], candidates[j]))
 
             if not possible_pairs:
-                errors.append(f"{current.strftime('%Y-%m-%d')} ({current.strftime('%A')}): No compatible nurse pairs available.")
+                errors.append(f"{current.strftime('%Y-%m-%d')} ({current.strftime('%A')}): No compatible person pairs available.")
                 assignments.append({
                     'date': current.strftime('%Y-%m-%d'),
                     'person1': "Unassigned",
@@ -131,7 +134,7 @@ def main():
                 'person2': chosen_pair[1]['name']
             })
 
-            # Update next_available for the assigned nurses
+            # Update next_available for the assigned people
             chosen_pair[0]['next_available'] = current + timedelta(days=5)
             chosen_pair[1]['next_available'] = current + timedelta(days=5)
 
@@ -165,17 +168,24 @@ def main():
     for _, row in df.iterrows():
         w = int(row['week_number'])
         day = row['weekday']  # Monday, Tuesday, ...
+        date_str = row['date']  # 'YYYY-MM-DD'
         assigned = f"{row['person1']}\n{row['person2']}"
         if w not in weeks_data:
             weeks_data[w] = {}
-        weeks_data[w][day] = assigned
+        weeks_data[w][day] = {'date': date_str, 'assignment': assigned}
+    
+    # Ensure all days are present in each week
+    for week in weeks_data:
+        for day in days_order:
+            if day not in weeks_data[week]:
+                # Assign default values for missing days
+                weeks_data[week][day] = {'date': 'N/A', 'assignment': 'No Assignment'}
 
     # Create Excel workbook
     wb = Workbook()
     sheet = wb.active
     sheet.title = "Schedule"
 
-    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     row_idx = 1
 
     # Define border style
@@ -200,6 +210,15 @@ def main():
         
         row_idx += 1
 
+        # Add Date Row
+        for col_idx, day_name in enumerate(days_order, start=1):
+            date = weeks_data[week][day_name]['date']
+            date_cell = sheet.cell(row=row_idx, column=col_idx, value=date)
+            date_cell.font = Font(bold=True)
+            date_cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            date_cell.border = thin_border  # Apply border
+        row_idx += 1
+
         # Create weekday header row
         for col_idx, day_name in enumerate(days_order, start=1):
             header_cell = sheet.cell(row=row_idx, column=col_idx, value=day_name)
@@ -210,7 +229,7 @@ def main():
 
         # Fill row with assigned pairs
         for col_idx, day_name in enumerate(days_order, start=1):
-            assignment = weeks_data[week].get(day_name, "No Assignment")
+            assignment = weeks_data[week].get(day_name, {"assignment": "No Assignment"})['assignment']
             assignment_cell = sheet.cell(
                 row=row_idx,
                 column=col_idx,
@@ -222,7 +241,7 @@ def main():
             # Apply fill color based on assignment status
             if assignment == "Holiday":
                 assignment_cell.fill = holiday_fill
-            elif assignment in ["Unassigned", "No Assignment"]:
+            elif assignment == "No Assignment":
                 assignment_cell.fill = unassigned_fill
 
         row_idx += 1  # Move to the next row for the next week
@@ -237,7 +256,7 @@ def main():
     row_idx += 1
 
     # Header for stats
-    sheet.cell(row=row_idx, column=1, value="Nurse Name").font = Font(bold=True)
+    sheet.cell(row=row_idx, column=1, value="Person Name").font = Font(bold=True)
     sheet.cell(row=row_idx, column=2, value="Weekend Assignments").font = Font(bold=True)
     sheet.cell(row=row_idx, column=3, value="Week Numbers").font = Font(bold=True)
     for col in range(1, 4):
@@ -247,8 +266,8 @@ def main():
     row_idx += 1
 
     # Populate stats
-    for nurse, data in weekend_counts.items():
-        sheet.cell(row=row_idx, column=1, value=nurse).alignment = Alignment(horizontal='left', vertical='center')
+    for person, data in weekend_counts.items():
+        sheet.cell(row=row_idx, column=1, value=person).alignment = Alignment(horizontal='left', vertical='center')
         sheet.cell(row=row_idx, column=2, value=data['count']).alignment = Alignment(horizontal='left', vertical='center')
         week_numbers = ", ".join(map(str, sorted(set(data['weeks']))))
         sheet.cell(row=row_idx, column=3, value=week_numbers).alignment = Alignment(horizontal='left', vertical='center')
@@ -264,18 +283,18 @@ def main():
         sheet.column_dimensions[column_letter].width = 20  # Adjust the width as needed
 
     # Adjust Stats Section Columns
-    sheet.column_dimensions[get_column_letter(1)].width = 20  # Nurse Name
-    sheet.column_dimensions[get_column_letter(2)].width = 20  # Weekend Assignments
+    sheet.column_dimensions[get_column_letter(1)].width = 20  # Person Name
+    sheet.column_dimensions[get_column_letter(2)].width = 25  # Weekend Assignments
     sheet.column_dimensions[get_column_letter(3)].width = 30  # Week Numbers
 
-    # Optional: Adjust row heights if necessary
-    # for row in sheet.iter_rows():
-    #     sheet.row_dimensions[row[0].row].height = 30  # Set row height to 30
+    # Adjust row heights 
+    for row in sheet.iter_rows():
+        sheet.row_dimensions[row[0].row].height = 30  # Set row height to 30
 
     # Save as .xlsx
     try:
-        wb.save("nurse_schedule.xlsx")
-        print("Schedule successfully generated and saved as 'nurse_schedule.xlsx'.")
+        wb.save("people_schedule.xlsx")
+        print("Schedule successfully generated and saved as 'people_schedule.xlsx'.")
     except Exception as e:
         print(f"Failed to save the schedule: {e}")
         sys.exit(1)
