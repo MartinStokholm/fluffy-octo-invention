@@ -1,0 +1,55 @@
+{
+  "personas": [
+    {
+      "name": "Susan",
+      "incompatible_with": ["Mary"],
+      "unavailable_days": ["Monday"]
+    },
+    {
+      "name": "Mary",
+      "incompatible_with": [],
+      "unavailable_days": ["Tuesday"]
+    },
+    {
+      "name": "Charles",
+      "incompatible_with": [],
+      "unavailable_days": ["Wednesday"]
+    },
+    {
+      "name": "John",
+      "incompatible_with": [],
+      "unavailable_days": ["Thursday"]
+    },
+    {
+      "name": "Jane",
+      "incompatible_with": [],
+      "unavailable_days": ["Friday"]
+    },
+    {
+      "name": "Mica",
+      "incompatible_with": [],
+      "unavailable_days": []
+    },
+    {
+      "name": "Bobina",
+      "incompatible_with": [],
+      "unavailable_days": []
+    },
+    {
+      "name": "Hannah",
+      "incompatible_with": [],
+      "unavailable_days": []
+    },
+    {
+      "name": "Fernando",
+      "incompatible_with": [],
+      "unavailable_days": []
+    },
+    {
+      "name": "Katie",
+      "incompatible_with": [],
+      "unavailable_days": []
+    }
+  ],
+  "holidays": ["2023-12-25", "2023-01-01"]
+}
