@@ -1,6 +1,7 @@
 import sys
 from datetime import datetime, timedelta
 import random
+from collections import defaultdict
 from config import load_config
 from utils import is_holiday_day, can_work_day, not_incompatible, add_months
 from excel_writer import save_schedule_to_excel
@@ -48,11 +49,16 @@ def main():
     end_date = add_months(start_date, number_of_months)
     assignments = []
     errors = []
+    next_best_candidates = []
 
     # Initialize weekend assignment counts with week numbers
     weekend_counts = {persona['name']: {'count': 0, 'weeks': []} for persona in personas}
 
+    # Initialize pairing frequency tracker
+    pairing_frequency = defaultdict(int)
+
     current = start_date
+    last_assigned_pair = (None, None)
     while current <= end_date:
         if not is_holiday_day(current, holidays):
             # Gather available candidates
@@ -67,8 +73,16 @@ def main():
                     'person1': "Unassigned",
                     'person2': "Unassigned"
                 })
+                next_best_candidates.append({
+                    'date': current.strftime('%Y-%m-%d'),
+                    'person1': find_next_best_candidate(personas, current, assignments),
+                    'person2': find_next_best_candidate(personas, current, assignments, exclude=[find_next_best_candidate(personas, current, assignments)])
+                })
                 current += timedelta(days=1)
                 continue
+
+            # Shuffle candidates to introduce randomness
+            random.shuffle(candidates)
 
             # Attempt to find a compatible pair
             possible_pairs = []
@@ -84,16 +98,25 @@ def main():
                     'person1': "Unassigned",
                     'person2': "Unassigned"
                 })
+                next_best_candidates.append({
+                    'date': current.strftime('%Y-%m-%d'),
+                    'person1': find_next_best_candidate(personas, current, assignments),
+                    'person2': find_next_best_candidate(personas, current, assignments, exclude=[find_next_best_candidate(personas, current, assignments)])
+                })
                 current += timedelta(days=1)
                 continue
 
-            # Select a pair
-            if current.weekday() < 5:
-                # Weekday: Select the first available compatible pair
-                chosen_pair = possible_pairs[0]
-            else:
-                # Weekend: Shuffle and select a random compatible pair
-                random.shuffle(possible_pairs)
+            # Sort pairs by their frequency to prioritize less frequently paired individuals
+            possible_pairs.sort(key=lambda pair: pairing_frequency[(pair[0]['name'], pair[1]['name'])] + pairing_frequency[(pair[1]['name'], pair[0]['name'])])
+
+            # Select a pair that is not the same as the last assigned pair
+            chosen_pair = None
+            for pair in possible_pairs:
+                if (pair[0]['name'], pair[1]['name']) != last_assigned_pair and (pair[1]['name'], pair[0]['name']) != last_assigned_pair:
+                    chosen_pair = pair
+                    break
+
+            if not chosen_pair:
                 chosen_pair = possible_pairs[0]
 
             assignments.append({
@@ -114,6 +137,13 @@ def main():
                 weekend_counts[chosen_pair[1]['name']]['count'] += 1
                 weekend_counts[chosen_pair[1]['name']]['weeks'].append(week_number)
 
+            # Update pairing frequency
+            pairing_frequency[(chosen_pair[0]['name'], chosen_pair[1]['name'])] += 1
+            pairing_frequency[(chosen_pair[1]['name'], chosen_pair[0]['name'])] += 1
+
+            # Update last assigned pair
+            last_assigned_pair = (chosen_pair[0]['name'], chosen_pair[1]['name'])
+
         else:
             # Holidays: No assignment needed
             assignments.append({
@@ -125,7 +155,7 @@ def main():
         current += timedelta(days=1)
 
     # Save the schedule to an Excel file
-    save_schedule_to_excel(assignments, weekend_counts, days_order, personas)
+    save_schedule_to_excel(assignments, weekend_counts, days_order, personas, next_best_candidates)
 
     # Log errors to a separate file
     if errors:
@@ -140,6 +170,12 @@ def main():
             print(f"Failed to write error log: {e}")
     else:
         print("\nAll days were successfully scheduled.")
+
+def find_next_best_candidate(personas, current_date, assignments, exclude=[]):
+    for p in personas:
+        if p['name'] not in exclude and can_work_day(p, current_date):
+            return p['name']
+    return "No Candidate"
 
 if __name__ == "__main__":
     main()

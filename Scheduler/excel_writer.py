@@ -3,7 +3,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 
-def save_schedule_to_excel(assignments, weekend_counts, days_order, personas, filename="people_schedule.xlsx"):
+def save_schedule_to_excel(assignments, weekend_counts, days_order, personas, next_best_candidates, filename="people_schedule.xlsx"):
     df = pd.DataFrame(assignments)
     df['date_obj'] = pd.to_datetime(df['date'])
     df['week_number'] = df['date_obj'].dt.isocalendar().week
@@ -99,7 +99,7 @@ def save_schedule_to_excel(assignments, weekend_counts, days_order, personas, fi
     # Add Stats Rows
     row_idx += 1  # Add an empty row before stats
     stats_title = f"Weekend Assignment Stats (Total Weeks: {len(weeks_data)})"
-    sheet.merge_cells(start_row=row_idx, end_row=row_idx, start_column=1, end_column=5)
+    sheet.merge_cells(start_row=row_idx, end_row=row_idx, start_column=1, end_column=6)
     stats_cell = sheet.cell(row=row_idx, column=1, value=stats_title)
     stats_cell.font = Font(bold=True)
     stats_cell.alignment = Alignment(horizontal='left', vertical='center')
@@ -111,7 +111,8 @@ def save_schedule_to_excel(assignments, weekend_counts, days_order, personas, fi
     sheet.cell(row=row_idx, column=3, value="Week Numbers").font = Font(bold=True)
     sheet.cell(row=row_idx, column=4, value="Unavailable Dates").font = Font(bold=True)
     sheet.cell(row=row_idx, column=5, value="Incompatible With").font = Font(bold=True)
-    for col in range(1, 6):
+    sheet.cell(row=row_idx, column=6, value="Next Best Candidates").font = Font(bold=True)
+    for col in range(1, 7):
         cell = sheet.cell(row=row_idx, column=col)
         cell.alignment = Alignment(horizontal='left', vertical='center')
         cell.border = thin_border
@@ -126,12 +127,18 @@ def save_schedule_to_excel(assignments, weekend_counts, days_order, personas, fi
         weekend_count = weekend_data['count']
         week_numbers = ", ".join(map(str, sorted(set(weekend_data['weeks']))))
 
+        next_best_candidate_info = ""
+        for candidate in next_best_candidates:
+            if candidate['person1'] == name or candidate['person2'] == name:
+                next_best_candidate_info += f"Week {candidate['date']} ({candidate['person1']}, {candidate['person2']})\n"
+
         sheet.cell(row=row_idx, column=1, value=name).alignment = Alignment(horizontal='left', vertical='center')
         sheet.cell(row=row_idx, column=2, value=weekend_count).alignment = Alignment(horizontal='left', vertical='center')
         sheet.cell(row=row_idx, column=3, value=week_numbers).alignment = Alignment(horizontal='left', vertical='center')
         sheet.cell(row=row_idx, column=4, value=unavailable_dates).alignment = Alignment(horizontal='left', vertical='center')
         sheet.cell(row=row_idx, column=5, value=incompatible_with).alignment = Alignment(horizontal='left', vertical='center')
-        for col in range(1, 6):
+        sheet.cell(row=row_idx, column=6, value=next_best_candidate_info).alignment = Alignment(horizontal='left', vertical='center')
+        for col in range(1, 7):
             cell = sheet.cell(row=row_idx, column=col)
             cell.border = thin_border
         row_idx += 1
@@ -148,6 +155,7 @@ def save_schedule_to_excel(assignments, weekend_counts, days_order, personas, fi
     sheet.column_dimensions[get_column_letter(3)].width = 30  # Week Numbers
     sheet.column_dimensions[get_column_letter(4)].width = 30  # Unavailable Dates
     sheet.column_dimensions[get_column_letter(5)].width = 30  # Incompatible With
+    sheet.column_dimensions[get_column_letter(6)].width = 40  # Next Best Candidates
 
     # Adjust row heights 
     for row in sheet.iter_rows():

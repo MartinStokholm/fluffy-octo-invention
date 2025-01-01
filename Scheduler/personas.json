@@ -47,7 +47,7 @@
     },
     {
       "name": "Katie",
-      "incompatible_with": ["Fernando"],
+      "incompatible_with": [],
       "unavailable_days": []
     }
   ],
