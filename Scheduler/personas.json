@@ -3,12 +3,12 @@
     {
       "name": "Susan",
       "incompatible_with": [],
-      "unavailable_days": []
+      "unavailable_days": ["2025-01-15", "2025-02-10"]
     },
     {
       "name": "Mary",
       "incompatible_with": [],
-      "unavailable_days": []
+      "unavailable_days": ["2025-01-20"]
     },
     {
       "name": "Charles",
@@ -18,11 +18,11 @@
     {
       "name": "John",
       "incompatible_with": [],
-      "unavailable_days": []
+      "unavailable_days": ["2025-03-05"]
     },
     {
       "name": "Jane",
-      "incompatible_with": [],
+      "incompatible_with": ["Mica"],
       "unavailable_days": []
     },
     {
@@ -47,7 +47,7 @@
     },
     {
       "name": "Katie",
-      "incompatible_with": [],
+      "incompatible_with": ["Fernando"],
       "unavailable_days": []
     }
   ],

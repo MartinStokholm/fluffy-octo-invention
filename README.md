@@ -46,7 +46,7 @@ Ensure you have Python installed on your device. This guide assumes you have Pyt
 2. **Navigate to the Project Directory:**
 
    ```bash
-   cd path/to/people-schedule-generator
+   cd path/to/fluffy-octo-invention/Scheduler
    ```
 
 3. **Install Required Packages:**
@@ -93,7 +93,7 @@ You can modify this file to add or remove people, set incompatibilities, and def
 To run the script, use the following command:
 
 ```bash
-python schedule.py YYYY-MM-DD number_of_months
+python Scheduler/schedule.py YYYY-MM-DD number_of_months
 ```
 
 - `YYYY-MM-DD`: The start date for the schedule.
@@ -102,7 +102,7 @@ python schedule.py YYYY-MM-DD number_of_months
 Example:
 
 ```bash
-python schedule.py 2023-01-01 3
+python Scheduler/schedule.py 2025-01-01 3
 ```
 
 ### Rules and Conditions
