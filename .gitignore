@@ -175,3 +175,5 @@ Scheduler/people_schedule.xlsx
 Scheduler/nurse_schedule.xlsx
 people_schedule.xlsx
 .DS_Store
+people_schedule.xlsx
+*.xlsx
