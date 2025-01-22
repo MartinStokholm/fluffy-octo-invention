@@ -2,12 +2,15 @@ from datetime import datetime
 from scheduler import Scheduler
 from person import Person
 from schedule_exporter import ScheduleExporter
+from result_saver import SaveOutput
+from pathlib import Path
 import argparse
 import json
+from utils import ensure_dir_exists, generate_timestamped_filename
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="Nurse Scheduling Script")
+    parser = argparse.ArgumentParser(description="Scheduling Script")
     parser.add_argument(
         "--start-date",
         type=lambda s: datetime.strptime(s, "%Y-%m-%d"),
@@ -19,6 +22,18 @@ def parse_arguments():
         type=int,
         required=True,
         help="Number of weeks to generate schedules for",
+    )
+    parser.add_argument(
+        "--json-output-dir",
+        type=str,
+        default="data",
+        help="Relative directory to save the JSON output",
+    )
+    parser.add_argument(
+        "--excel-output-dir",
+        type=str,
+        default="output",
+        help="Relative directory to save the Excel schedule",
     )
     return parser.parse_args()
 
@@ -42,11 +57,37 @@ def main():
     args = parse_arguments()
     start_date = args.start_date
     weeks = args.weeks
+
+    BASE_DIR = Path(__file__).parent.resolve()
+
+    # Define output directories based on BASE_DIR
+    json_output_dir = BASE_DIR / args.json_output_dir
+    excel_output_dir = BASE_DIR / args.excel_output_dir
+
+    # Ensure output directories exist
+    ensure_dir_exists(json_output_dir)
+    ensure_dir_exists(excel_output_dir)
+
+    # Generate timestamped filenames
+    json_output_filename = generate_timestamped_filename(
+        "people_assigned", start_date, "json"
+    )
+    excel_output_filename = generate_timestamped_filename(
+        "schedule", start_date, "xlsx"
+    )
+
+    # Define full paths with timestamped filenames
+    json_output_path = json_output_dir / json_output_filename
+    excel_output_path = excel_output_dir / excel_output_filename
+
     print(f"Start Date: {start_date.strftime('%Y-%m-%d')}")
     print(f"Number of Weeks: {weeks}")
+    print(f"JSON Output Path: {json_output_path}")
+    print(f"Excel Output Path: {excel_output_path}")
 
-    # Load people from people.json
-    people = load_people("people.json")
+    # Load people from people.json (assumed to be in the same directory as main.py)
+    people_json_path = BASE_DIR / "input/people.json"
+    people = load_people(people_json_path)
 
     # Define constraints
     from constraints import (
@@ -75,11 +116,20 @@ def main():
     scheduler = Scheduler(people, start_date, weeks, constraints)
 
     # Assign days (solve the model)
-    scheduler.assign_days()
+    scheduled_people = scheduler.assign_days()
+
+    if scheduled_people is None:
+        print("No feasible solution found. Exiting.")
+        return
+
+    # Initialize SaveOutput with the desired JSON output path
+    saver = SaveOutput(output_filepath=str(json_output_path))
+    # Save the assignments using SaveOutput
+    saver.save(scheduled_people)
 
     # After scheduling, export the results to a spreadsheet
     exporter = ScheduleExporter(
-        json_filepath="people_assigned.json", output_excel="schedule.xlsx"
+        json_filepath=str(json_output_path), output_excel=str(excel_output_path)
     )
     exporter.export()
 

@@ -63,8 +63,7 @@ class Scheduler:
 
         if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
             print("Solution Found:")
-            # Instantiate the SaveOutput class
-            saver = SaveOutput()
+
             # Collect assignments
             assignments = []
             num_people = len(self.people)
@@ -85,12 +84,12 @@ class Scheduler:
                     if solver.Value(self.shifts[(p, d)]):
                         self.people[p].assign_shift(day_dates[d])
 
-            # Save the assignments using SaveOutput
-            saver.save(self.people)
             print("Scheduling complete.")
+            return self.people
         else:
             print(f"Solver Status: {solver.StatusName(status)}")
             print(f"Number of conflicts: {solver.NumConflicts()}")
             print(f"Branches: {solver.NumBranches()}")
             print(f"Wall time: {solver.WallTime()}s")
             print("No feasible solution found.")
+            return None

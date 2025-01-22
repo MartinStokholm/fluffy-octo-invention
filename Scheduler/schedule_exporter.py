@@ -1,10 +1,12 @@
 import json
+import os
 from datetime import datetime
 from typing import List, Dict
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Border, Side
 from dataclasses import dataclass, asdict
+from utils import ensure_dir_exists
 
 
 @dataclass
@@ -90,25 +92,18 @@ class ScheduleExporter:
             assigned_names = date_schedule[date.strftime("%Y-%m-%d")]
             self.schedule[week_key][day_str] = assigned_names
 
-    def create_spreadsheet(self):
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Schedule"
+    def create_schedule_sheet(self, wb: Workbook):
+        ws = wb.create_sheet(title="Schedule")
 
         # Define styles
         week_header_font = Font(bold=True, size=14)
         day_header_font = Font(bold=True)
-        stats_header_font = Font(bold=True, size=12)
         assigned_fill = PatternFill(
             start_color="90EE90", end_color="90EE90", fill_type="solid"
         )  # Light Green
         weekend_fill = PatternFill(
             start_color="FFD700", end_color="FFD700", fill_type="solid"
         )  # Gold
-        stats_fill = PatternFill(
-            start_color="ADD8E6", end_color="ADD8E6", fill_type="solid"
-        )  # Light Blue
-
         thin_border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -144,61 +139,99 @@ class ScheduleExporter:
                 )
                 assigned_nurses.append(names_str)
             for idx, names_str in enumerate(assigned_nurses, start=1):
-                ws.cell(row=current_row, column=idx, value=names_str)
+                cell = ws.cell(row=current_row, column=idx, value=names_str)
                 # Highlight weekends
                 day_name = day_headers[idx - 1].split()[0]
                 if day_name in {"Friday", "Saturday", "Sunday"}:
-                    ws.cell(row=current_row, column=idx).fill = weekend_fill
+                    cell.fill = weekend_fill
                 # Highlight assigned nurses
-                ws.cell(row=current_row, column=idx).fill = assigned_fill
+                cell.fill = assigned_fill
+                # Apply border
+                cell.border = thin_border
             current_row += 2  # Add a blank row after each week for readability
 
-        # Add Stats Section
-        stats_start_row = current_row + 1  # Leave a blank row
+        # Adjust column widths for better visibility
+        for column_cells in ws.columns:
+            max_length = 0
+            column = column_cells[0].column_letter  # Get the column name
+            for cell in column_cells:
+                try:
+                    if cell.value:
+                        length = len(str(cell.value))
+                        if length > max_length:
+                            max_length = length
+                except:
+                    pass
+            adjusted_width = (max_length + 2) if max_length < 50 else 50
+            ws.column_dimensions[column].width = adjusted_width
+
+    def create_statistics_sheet(self, wb: Workbook):
+        ws = wb.create_sheet(title="Statistics")
+
+        # Define styles
+        stats_header_font = Font(bold=True, size=12)
+        day_header_font = Font(bold=True)
+        stats_fill = PatternFill(
+            start_color="ADD8E6", end_color="ADD8E6", fill_type="solid"
+        )  # Light Blue
+        thin_border = Border(
+            left=Side(style="thin"),
+            right=Side(style="thin"),
+            top=Side(style="thin"),
+            bottom=Side(style="thin"),
+        )
+
+        current_row = 1
 
         # Write Stats Header
-        ws.cell(row=stats_start_row, column=1, value="Statistics")
-        ws.cell(row=stats_start_row, column=1).font = stats_header_font
-        stats_start_row += 1
+        ws.cell(row=current_row, column=1, value="Statistics")
+        ws.cell(row=current_row, column=1).font = stats_header_font
+        current_row += 1
 
         # Write Stats Table Headers
-        ws.cell(row=stats_start_row, column=1, value="Name")
-        ws.cell(row=stats_start_row, column=2, value="Fridays Assigned")
-        ws.cell(row=stats_start_row, column=3, value="Saturdays Assigned")
-        ws.cell(row=stats_start_row, column=4, value="Sundays Assigned")
-        ws.cell(
-            row=stats_start_row, column=5, value="Weekday Shifts"
-        )  # Existing Column
-        ws.cell(row=stats_start_row, column=6, value="Weekend Shifts")  # New Column
-        ws.cell(row=stats_start_row, column=7, value="Total Shifts")  # New Column
-
-        # Apply styles to the headers
-        for col in range(1, 8):  # Updated range to include two new columns
-            ws.cell(row=stats_start_row, column=col).font = day_header_font
-            ws.cell(row=stats_start_row, column=col).fill = stats_fill
-        stats_start_row += 1
+        headers = [
+            "Name",
+            "Fridays Assigned",
+            "Saturdays Assigned",
+            "Sundays Assigned",
+            "Weekday Shifts",
+            "Weekend Shifts",
+            "Total Shifts",
+        ]
+        for idx, header in enumerate(headers, start=1):
+            cell = ws.cell(row=current_row, column=idx, value=header)
+            cell.font = day_header_font
+            cell.fill = stats_fill
+            cell.border = thin_border
+        current_row += 1
 
         # Populate Stats Data
         for person in self.people:
-            ws.cell(row=stats_start_row, column=1, value=person.name)
-            ws.cell(row=stats_start_row, column=2, value=person.fridays_count)
-            ws.cell(row=stats_start_row, column=3, value=person.saturdays_count)
-            ws.cell(row=stats_start_row, column=4, value=person.sundays_count)
-            ws.cell(
-                row=stats_start_row, column=5, value=person.weekday_shifts
-            )  # Existing Column
-            ws.cell(
-                row=stats_start_row, column=6, value=person.weekend_shifts
-            )  # New Column
-            ws.cell(
-                row=stats_start_row, column=7, value=person.total_shifts
-            )  # New Column
-            stats_start_row += 1
+            ws.cell(row=current_row, column=1, value=person.name).border = thin_border
+            ws.cell(row=current_row, column=2, value=person.fridays_count).border = (
+                thin_border
+            )
+            ws.cell(row=current_row, column=3, value=person.saturdays_count).border = (
+                thin_border
+            )
+            ws.cell(row=current_row, column=4, value=person.sundays_count).border = (
+                thin_border
+            )
+            ws.cell(row=current_row, column=5, value=person.weekday_shifts).border = (
+                thin_border
+            )
+            ws.cell(row=current_row, column=6, value=person.weekend_shifts).border = (
+                thin_border
+            )
+            ws.cell(row=current_row, column=7, value=person.total_shifts).border = (
+                thin_border
+            )
+            current_row += 1
 
-        # Apply Borders to Stats Table
+        # Apply Borders to the stats table
         for row in ws.iter_rows(
-            min_row=current_row, max_row=stats_start_row - 1, min_col=1, max_col=7
-        ):  # Updated max_col to 7
+            min_row=2, max_row=current_row - 1, min_col=1, max_col=7
+        ):
             for cell in row:
                 cell.border = thin_border
 
@@ -217,8 +250,21 @@ class ScheduleExporter:
             adjusted_width = (max_length + 2) if max_length < 50 else 50
             ws.column_dimensions[column].width = adjusted_width
 
+    def create_spreadsheet(self):
+        wb = Workbook()
+
+        # Remove the default "Sheet"
+        default_sheet = wb["Sheet"]
+        wb.remove(default_sheet)
+
+        # Create Schedule Sheet
+        self.create_schedule_sheet(wb)
+
+        # Create Statistics Sheet
+        self.create_statistics_sheet(wb)
+        ensure_dir_exists(self.output_excel)
         wb.save(self.output_excel)
-        print(f"Schedule exported to {self.output_excel}")
+        print(f"Schedule spreadsheet exported to:\n{self.output_excel}")
 
     def export(self):
         self.load_data()

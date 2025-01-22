@@ -1,11 +1,15 @@
 import json
+import os
+from pathlib import Path
 from typing import List
+from dataclasses import asdict
 from person import Person
+from utils import ensure_dir_exists
 
 
 class SaveOutput:
-    def __init__(self, output_filepath: str = "people_assigned.json"):
-        self.output_filepath = output_filepath
+    def __init__(self, output_filepath: str = "data/people_assigned.json"):
+        self.output_filepath = Path(output_filepath)
 
     def save(self, people: List[Person]):
         """
@@ -29,8 +33,8 @@ class SaveOutput:
                 "sundays_count": person.sundays_count,
             }
             assignments.append(person_data)
-
-        with open(self.output_filepath, "w") as outfile:
+        ensure_dir_exists(self.output_filepath)
+        with self.output_filepath.open("w") as outfile:
             json.dump(assignments, outfile, indent=4)
 
-        print(f"Assignments successfully saved to {self.output_filepath}.")
+        print(f"Assignments successfully saved to:\n{self.output_filepath}.")
