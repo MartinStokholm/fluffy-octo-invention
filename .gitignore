@@ -169,13 +169,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-Scheduler/~$nurse_schedule.xlsx
-Scheduler/~$people_schedule.xlsx
-Scheduler/people_schedule.xlsx
-Scheduler/nurse_schedule.xlsx
-people_schedule.xlsx
 .DS_Store
-people_schedule.xlsx
 *.xlsx
 personas.json
-Scheduler/personas.json
+
+# ignore all from output
+output/*
