@@ -87,9 +87,8 @@ class Scheduler:
 
             return self.people
         else:
-            logging.info(f"Solver Status: {solver.StatusName(status)}")
-            logging.info(f"Number of conflicts: {solver.NumConflicts()}")
-            logging.info(f"Branches: {solver.NumBranches()}")
-            logging.info(f"Wall time: {solver.WallTime()}s")
-            logging.info("❌ No feasible solution found.")
+            logging.info(f"🚧 Solver Status: {solver.StatusName(status)}")
+            logging.info(f"🚧 Number of conflicts: {solver.NumConflicts()}")
+            logging.info(f"🚧 Branches: {solver.NumBranches()}")
+            logging.info(f"🚧 Wall time: {solver.WallTime()}s")
             return None

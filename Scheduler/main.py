@@ -106,7 +106,7 @@ def main():
 
     # If no feasible solution is found, exit the script
     if scheduled_people is None:
-        logging.error("No feasible solution found. Exiting.")
+        logging.info("❌ No feasible solution found. Exiting.")
         return
 
     # Initialize SaveOutput with the desired JSON output path and BASE_DIR
