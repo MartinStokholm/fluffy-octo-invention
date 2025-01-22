@@ -55,7 +55,10 @@ def main():
     args = parse_arguments()
 
     BASE_DIR = Path(__file__).parent.resolve()
-    clear_directory(BASE_DIR / "logs", BASE_DIR, is_setup=True)
+
+    if args.clean:
+        # Clear the logs and output directories if --clean flag is set
+        clear_directory(BASE_DIR / "logs", BASE_DIR, is_setup=True)
 
     # Setup logging
     setup_logging(args, BASE_DIR)
@@ -87,9 +90,9 @@ def main():
         WorkingDaysConstraint(),
         RestPeriodConstraint(),
         IncompatiblePeopleConstraint(),
-        TotalShiftBalanceConstraint(),
+        # TotalShiftBalanceConstraint(),
         ShiftAllocationBoundsConstraint(),
-        # ShiftBalanceConstraint(),
+        ShiftBalanceConstraint(),
         # WeekendDayBalanceConstraint(),
     ]
 
