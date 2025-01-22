@@ -63,8 +63,6 @@ class Scheduler:
         status = solver.Solve(self.model)
 
         if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
-            logging.info("✅ Solution Found!")
-
             # Collect assignments
             assignments = []
             num_people = len(self.people)

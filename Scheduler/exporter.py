@@ -1,15 +1,20 @@
 import json
 import os
-from datetime import datetime
-from typing import List, Dict
+import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
-from openpyxl.utils import get_column_letter
-from dataclasses import dataclass, asdict
-from utils import ensure_dir_exists, get_relative_path
 import logging
+
+from utils import ensure_dir_exists, get_relative_path
+from typing import Dict, List
 from pathlib import Path
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from datetime import datetime
+from collections import defaultdict
+from dataclasses import dataclass, asdict
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
 
 
 @dataclass
@@ -47,7 +52,7 @@ class PersonResult:
         return len(self.assigned_shifts)
 
 
-class ScheduleExporter:
+class SpreadsheetExporter:
     def __init__(self, json_filepath: str, output_excel: str, base_dir: Path):
         self.json_filepath = Path(json_filepath)
         self.output_excel = Path(output_excel)
@@ -332,7 +337,7 @@ class ScheduleExporter:
         try:
             wb.save(self.output_excel)
             relative_excel_path = get_relative_path(self.output_excel, self.base_dir)
-            logging.info(f"📊 Exported to: {relative_excel_path}")
+            logging.info(f"💾 Output: {relative_excel_path}")
         except Exception as e:
             relative_excel_path = get_relative_path(self.output_excel, self.base_dir)
             logging.error(
@@ -343,3 +348,69 @@ class ScheduleExporter:
         self.load_data()
         self.organize_schedule()
         self.create_spreadsheet()
+
+
+class GraphExporter:
+    def __init__(self, json_filepath: str, output_graph: str, base_dir: Path):
+        self.json_filepath = Path(json_filepath)
+        self.base_dir = base_dir
+        self.output_graph = self.base_dir / output_graph
+        self.people: List[Dict] = []
+        self.assignments: Dict[str, Dict[str, int]] = defaultdict(
+            lambda: {"Friday": 0, "Saturday": 0, "Sunday": 0}
+        )
+        self.graph_path = self.output_graph
+
+    def load_data(self):
+        with self.json_filepath.open("r") as file:
+            data = json.load(file)
+            for person_data in data:
+                person = {
+                    "name": person_data["name"],
+                    "fridays_count": person_data.get("fridays_count", 0),
+                    "saturdays_count": person_data.get("saturdays_count", 0),
+                    "sundays_count": person_data.get("sundays_count", 0),
+                }
+                self.people.append(person)
+
+    def organize_data(self):
+        for person in self.people:
+            self.assignments[person["name"]]["Friday"] = person["fridays_count"]
+            self.assignments[person["name"]]["Saturday"] = person["saturdays_count"]
+            self.assignments[person["name"]]["Sunday"] = person["sundays_count"]
+
+    def plot_distribution_comparison(self):
+        # Prepare data for plotting
+        persons = list(self.assignments.keys())
+        fridays = [self.assignments[person]["Friday"] for person in persons]
+        saturdays = [self.assignments[person]["Saturday"] for person in persons]
+        sundays = [self.assignments[person]["Sunday"] for person in persons]
+
+        x = range(len(persons))  # the label locations
+        width = 0.25  # the width of the bars
+
+        plt.figure(figsize=(20, 10))
+        plt.bar(
+            [i - width for i in x], fridays, width, label="Fridays", color="skyblue"
+        )
+        plt.bar(x, saturdays, width, label="Saturdays", color="salmon")
+        plt.bar(
+            [i + width for i in x], sundays, width, label="Sundays", color="lightgreen"
+        )
+
+        plt.xlabel("Person", fontsize=14)
+        plt.ylabel("Number of Assignments", fontsize=14)
+        plt.title("Weekend Shift Assignments per Person", fontsize=16)
+        plt.xticks(x, persons, rotation=45, ha="right")
+        plt.legend()
+        plt.tight_layout()
+
+        plt.savefig(self.graph_path)
+        plt.close()
+        relative_graph_path = get_relative_path(self.graph_path, self.base_dir)
+        logging.info(f"💾 Output: {relative_graph_path}")
+
+    def export_graph(self):
+        self.load_data()
+        self.organize_data()
+        self.plot_distribution_comparison()

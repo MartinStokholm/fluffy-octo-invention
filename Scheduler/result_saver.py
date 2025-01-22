@@ -42,9 +42,9 @@ class SaveOutput:
             with self.output_filepath.open("w") as outfile:
                 json.dump(assignments, outfile, indent=4)
             logging.info(
-                f"💾 Saved to: {get_relative_path(self.output_filepath, self.base_dir)}."
+                f"💾 Output: {get_relative_path(self.output_filepath, self.base_dir)}."
             )
         except Exception as e:
             logging.error(
-                f"⚠️ Failed to save: {get_relative_path(self.output_filepath, self.base_dir)}: {e}"
+                f"❌ Output: {get_relative_path(self.output_filepath, self.base_dir)}: {e}"
             )

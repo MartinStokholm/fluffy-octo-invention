@@ -8,7 +8,7 @@ import json
 from person import Person
 
 
-def setup_logging(args: Namespace, base_dir: Path):
+def setup_logging(args: Namespace, base_dir: Path, logging_output_dir: Path):
     """
     Configures the logging module to log INFO messages to the console and to a
     timestamped log file within the 'logs' directory.
@@ -18,7 +18,7 @@ def setup_logging(args: Namespace, base_dir: Path):
 
     """
     # Ensure the 'logs' directory exists
-    logs_dir = base_dir / "logs"
+    logs_dir = base_dir / logging_output_dir
     ensure_dir_exists(
         logs_dir / "do-we-exist.txt", base_dir, is_setup=True
     )  # Using dummy file to get parent directory
@@ -37,17 +37,19 @@ def setup_logging(args: Namespace, base_dir: Path):
         ],
     )
 
-    logging.info(f"📝 Log file: {get_relative_path(log_filepath, base_dir)}")
+    logging.info(f"📝 Logging: {get_relative_path(log_filepath, base_dir)}")
 
 
-def setup_output_paths(args: Namespace, base_dir: Path) -> Tuple[Path, Path]:
+def setup_output_paths(
+    args: Namespace, base_dir: Path
+) -> Tuple[Path, Path, Path, Path]:
     """
     Sets up the output directories, generates timestamped filenames, defines full paths,
     and logs the relevant information.
 
     :param args: Parsed command-line arguments.
     :param base_dir: The base directory of the project.
-    :return: Tuple containing JSON and Excel output paths.
+    :return: Tuple containing JSON, Excel and Graph output paths.
     """
     start_date = args.start_date
     is_clean_run = args.clean
@@ -55,17 +57,30 @@ def setup_output_paths(args: Namespace, base_dir: Path) -> Tuple[Path, Path]:
     # Define output directories based on BASE_DIR
     json_output_dir = base_dir / args.json_output_dir
     excel_output_dir = base_dir / args.excel_output_dir
+    graph_output_dir = base_dir / args.graph_output_dir
+    logging_output_dir = base_dir / args.logging_output_dir
+
+    # Ensure output directories exist
+    ensure_dir_exists(
+        json_output_dir / "do-we-exist.txt", base_dir, is_setup=is_clean_run
+    )  # Using dummy file to get parent directory
+    ensure_dir_exists(
+        excel_output_dir / "do-we-exist.txt", base_dir, is_setup=is_clean_run
+    )
+    ensure_dir_exists(
+        graph_output_dir / "do-we-exist.txt", base_dir, is_setup=is_clean_run
+    )
+
+    ensure_dir_exists(
+        logging_output_dir / "do-we-exist.txt", base_dir, is_setup=is_clean_run
+    )
 
     if is_clean_run:
         # Clear the directories if --clean flag is set
         clear_directory(json_output_dir, base_dir)
         clear_directory(excel_output_dir, base_dir)
-
-    # Ensure output directories exist
-    ensure_dir_exists(
-        json_output_dir / "do-we-exist.txt", base_dir, is_setup=True
-    )  # Using dummy file to get parent directory
-    ensure_dir_exists(excel_output_dir / "do-we-exist.txt", base_dir, is_setup=True)
+        clear_directory(graph_output_dir, base_dir)
+        clear_directory(logging_output_dir, base_dir)
 
     # Generate timestamped filenames
     json_output_filename = generate_timestamped_filename(
@@ -74,12 +89,20 @@ def setup_output_paths(args: Namespace, base_dir: Path) -> Tuple[Path, Path]:
     excel_output_filename = generate_timestamped_filename(
         "schedule", start_date, "xlsx"
     )
+    graph_output_filename = generate_timestamped_filename(
+        "weekend_distribution", start_date, "png"
+    )
+    logging_output_filename = generate_timestamped_filename(
+        "logging", start_date, "log"
+    )
 
     # Define full paths with timestamped filenames
     json_output_path = json_output_dir / json_output_filename
     excel_output_path = excel_output_dir / excel_output_filename
+    graph_output_path = graph_output_dir / graph_output_filename
+    logging_output_path = logging_output_dir / logging_output_filename
 
-    return json_output_path, excel_output_path
+    return json_output_path, excel_output_path, graph_output_path, logging_output_path
 
 
 def get_relative_path(path: Path, base_dir: Path) -> str:

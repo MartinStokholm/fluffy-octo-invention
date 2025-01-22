@@ -1,7 +1,7 @@
 from datetime import datetime
 from scheduler import Scheduler
 from person import Person
-from schedule_exporter import ScheduleExporter
+from exporter import SpreadsheetExporter, GraphExporter
 from result_saver import SaveOutput
 from pathlib import Path
 import argparse
@@ -14,6 +14,14 @@ from utils import (
     generate_timestamped_filename,
     clear_directory,
     load_people,
+)
+from constraints import (
+    TwoNursesPerDayConstraint,
+    WorkingDaysConstraint,
+    RestPeriodConstraint,
+    IncompatiblePeopleConstraint,
+    ShiftAllocationBoundsConstraint,
+    ShiftBalanceConstraint,
 )
 
 
@@ -34,15 +42,27 @@ def parse_arguments():
     parser.add_argument(
         "--json-output-dir",
         type=str,
-        default="data",
+        default="output/data",
         help="Relative directory to save the JSON output",
     )
     parser.add_argument(
         "--excel-output-dir",
         type=str,
-        default="output",
+        default="output/spreadsheet",
         help="Relative directory to save the Excel schedule",
-    )
+    ),
+    parser.add_argument(
+        "--graph-output-dir",
+        type=str,
+        default="output/graph",
+        help="Relative directory to save the assignment distribution graph",
+    ),
+    parser.add_argument(
+        "--logging-output-dir",
+        type=str,
+        default="output/logging",
+        help="Relative directory to save the log files",
+    ),
     parser.add_argument(
         "--clean",
         action="store_true",
@@ -56,44 +76,29 @@ def main():
 
     BASE_DIR = Path(__file__).parent.resolve()
 
-    if args.clean:
-        # Clear the logs and output directories if --clean flag is set
-        clear_directory(BASE_DIR / "logs", BASE_DIR, is_setup=True)
-
     # Setup logging
-    setup_logging(args, BASE_DIR)
+    setup_logging(args, BASE_DIR, args.logging_output_dir)
 
     # Setup output paths
-    json_output_path, excel_output_path = setup_output_paths(args, BASE_DIR)
-
-    logging.info(
-        f"🔄 {args.weeks} weeks starting on {args.start_date.strftime('%Y-%m-%d')}"
+    json_output_path, excel_output_path, graph_output_path, logging_output_path = (
+        setup_output_paths(args, BASE_DIR)
     )
+    start_date = args.start_date.strftime("%Y-%m-%d")
+
+    logging.info(f"🔄 {args.weeks} weeks | from: {start_date}")
+
     # Load people from JSON
     people_json_path = BASE_DIR / "input/people.json"
     people = load_people(people_json_path)
 
     # Define constraints
-    from constraints import (
-        TwoNursesPerDayConstraint,
-        WorkingDaysConstraint,
-        RestPeriodConstraint,
-        IncompatiblePeopleConstraint,
-        ShiftBalanceConstraint,
-        WeekendDayBalanceConstraint,
-        TotalShiftBalanceConstraint,
-        ShiftAllocationBoundsConstraint,
-    )
-
     constraints = [
         TwoNursesPerDayConstraint(),
         WorkingDaysConstraint(),
         RestPeriodConstraint(),
         IncompatiblePeopleConstraint(),
-        # TotalShiftBalanceConstraint(),
-        ShiftAllocationBoundsConstraint(),
         ShiftBalanceConstraint(),
-        # WeekendDayBalanceConstraint(),
+        ShiftAllocationBoundsConstraint(),
     ]
 
     # Initialize Scheduler
@@ -108,6 +113,7 @@ def main():
     if scheduled_people is None:
         logging.info("❌ No feasible solution found. Exiting.")
         return
+    logging.info("🤓 Solution Found!")
 
     # Initialize SaveOutput with the desired JSON output path and BASE_DIR
     saver = SaveOutput(output_filepath=str(json_output_path), base_dir=BASE_DIR)
@@ -116,12 +122,22 @@ def main():
     saver.save(scheduled_people)
 
     # After scheduling, export the results to a spreadsheet
-    exporter = ScheduleExporter(
+    exporter = SpreadsheetExporter(
         json_filepath=str(json_output_path),
         output_excel=str(excel_output_path),
         base_dir=BASE_DIR,
     )
     exporter.export()
+
+    # Export the assignment distribution graph
+    graph_exporter = GraphExporter(
+        json_filepath=str(json_output_path),
+        output_graph=str(graph_output_path),
+        base_dir=BASE_DIR,
+    )
+    graph_exporter.export_graph()
+
+    logging.info("✅ Scheduling, export, and graph generation completed successfully.")
 
 
 if __name__ == "__main__":
