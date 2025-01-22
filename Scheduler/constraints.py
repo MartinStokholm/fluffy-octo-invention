@@ -3,6 +3,7 @@ from ortools.sat.python import cp_model
 from datetime import datetime, timedelta
 from typing import List
 from person import Person
+import logging
 
 
 class Constraint(ABC):

@@ -4,9 +4,11 @@ from datetime import datetime
 from typing import List, Dict
 import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import PatternFill, Font, Border, Side
+from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
+from openpyxl.utils import get_column_letter
 from dataclasses import dataclass, asdict
 from utils import ensure_dir_exists
+import logging
 
 
 @dataclass
@@ -104,12 +106,18 @@ class ScheduleExporter:
         weekend_fill = PatternFill(
             start_color="FFD700", end_color="FFD700", fill_type="solid"
         )  # Gold
+        assigned_weekend_fill = PatternFill(
+            start_color="FFA500", end_color="FFA500", fill_type="solid"
+        )  # Orange
         thin_border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
             top=Side(style="thin"),
             bottom=Side(style="thin"),
         )
+        center_alignment = Alignment(
+            horizontal="center", vertical="center"
+        )  # Added Alignment
 
         current_row = 1
 
@@ -118,42 +126,98 @@ class ScheduleExporter:
 
         for week in sorted_weeks:
             # Write Week Header
-            ws.cell(row=current_row, column=1, value=week)
-            ws.cell(row=current_row, column=1).font = week_header_font
+            week_cell = ws.cell(row=current_row, column=1, value=week)
+            week_cell.font = week_header_font
+
+            # Determine the number of day columns to merge across
+            day_headers = list(self.schedule[week].keys())
+            num_days = len(day_headers)
+
+            # Merge cells across all day columns for the week header
+            if num_days > 1:
+                ws.merge_cells(
+                    start_row=current_row,
+                    start_column=1,
+                    end_row=current_row,
+                    end_column=num_days,
+                )
+                week_cell = ws.cell(row=current_row, column=1, value=week)
+                week_cell.font = week_header_font
+                week_cell.alignment = center_alignment
+            else:
+                # If there's only one day, no need to merge, but still center the text
+                week_cell.alignment = center_alignment
+
             current_row += 1
 
             # Write Day Headers
-            day_headers = list(self.schedule[week].keys())
             for idx, day in enumerate(day_headers, start=1):
-                ws.cell(row=current_row, column=idx, value=day)
-                ws.cell(row=current_row, column=idx).font = day_header_font
+                day_cell = ws.cell(row=current_row, column=idx, value=day)
+                day_cell.font = day_header_font
+                day_cell.alignment = center_alignment
+
             current_row += 1
 
-            # Write Assigned Nurses
-            assigned_nurses = []
+            # Prepare separate lists for first and second nurse names
+            assigned_nurses_first = []
+            assigned_nurses_second = []
             for day in day_headers:
                 names = self.schedule[week][day]
-                # Ensure only two names are listed
-                names_str = (
-                    ", ".join(names[:2]) if len(names) >= 2 else ", ".join(names)
-                )
-                assigned_nurses.append(names_str)
-            for idx, names_str in enumerate(assigned_nurses, start=1):
-                cell = ws.cell(row=current_row, column=idx, value=names_str)
-                # Highlight weekends
-                day_name = day_headers[idx - 1].split()[0]
+                first_name = names[0] if len(names) >= 1 else ""
+                second_name = names[1] if len(names) >= 2 else ""
+                assigned_nurses_first.append(first_name)
+                assigned_nurses_second.append(second_name)
+
+            # Write First Nurse Names
+            for idx, name in enumerate(assigned_nurses_first, start=1):
+                cell = ws.cell(row=current_row, column=idx, value=name)
+                # Extract day name and normalize
+                day_name = day_headers[idx - 1].split()[0].title()
+                # Determine fill based on day and assignment
                 if day_name in {"Friday", "Saturday", "Sunday"}:
-                    cell.fill = weekend_fill
-                # Highlight assigned nurses
-                cell.fill = assigned_fill
-                # Apply border
+                    if name:
+                        cell.fill = assigned_weekend_fill
+                    else:
+                        cell.fill = weekend_fill
+                else:
+                    if name:
+                        cell.fill = assigned_fill
+                # Apply border and alignment
                 cell.border = thin_border
-            current_row += 2  # Add a blank row after each week for readability
+                cell.alignment = Alignment(
+                    horizontal="center", vertical="center"
+                )  # Optional: Center text
+
+            current_row += 1
+
+            # Write Second Nurse Names
+            for idx, name in enumerate(assigned_nurses_second, start=1):
+                cell = ws.cell(row=current_row, column=idx, value=name)
+                # Extract day name and normalize
+                day_name = day_headers[idx - 1].split()[0].title()
+                # Determine fill based on day and assignment
+                if day_name in {"Friday", "Saturday", "Sunday"}:
+                    if name:
+                        cell.fill = assigned_weekend_fill
+                    else:
+                        cell.fill = weekend_fill
+                else:
+                    if name:
+                        cell.fill = assigned_fill
+                # Apply border and alignment
+                cell.border = thin_border
+                cell.alignment = Alignment(
+                    horizontal="center", vertical="center"
+                )  # Optional: Center text
+
+            current_row += 1
+
+            # Add a blank row after each week for readability
+            current_row += 1
 
         # Adjust column widths for better visibility
-        for column_cells in ws.columns:
+        for i, column_cells in enumerate(ws.columns, start=1):
             max_length = 0
-            column = column_cells[0].column_letter  # Get the column name
             for cell in column_cells:
                 try:
                     if cell.value:
@@ -163,7 +227,8 @@ class ScheduleExporter:
                 except:
                     pass
             adjusted_width = (max_length + 2) if max_length < 50 else 50
-            ws.column_dimensions[column].width = adjusted_width
+            column_letter = get_column_letter(i)
+            ws.column_dimensions[column_letter].width = adjusted_width
 
     def create_statistics_sheet(self, wb: Workbook):
         ws = wb.create_sheet(title="Statistics")
@@ -262,9 +327,8 @@ class ScheduleExporter:
 
         # Create Statistics Sheet
         self.create_statistics_sheet(wb)
-        ensure_dir_exists(self.output_excel)
         wb.save(self.output_excel)
-        print(f"Schedule spreadsheet exported to:\n{self.output_excel}")
+        logging.info(f"Schedule spreadsheet exported to:\n{self.output_excel}")
 
     def export(self):
         self.load_data()

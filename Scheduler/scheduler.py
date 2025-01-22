@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from constraints import Constraint
 from ortools.sat.python import cp_model
 from result_saver import SaveOutput
+import logging
 
 
 class Scheduler:
@@ -62,7 +63,7 @@ class Scheduler:
         status = solver.Solve(self.model)
 
         if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
-            print("Solution Found:")
+            logging.info("Solution Found:")
 
             # Collect assignments
             assignments = []
@@ -79,17 +80,17 @@ class Scheduler:
                 ]
                 shift_date = day_dates[d].strftime("%Y-%m-%d")
                 day_name = day_names[d]
-                print(f"{shift_date} ({day_name}): {', '.join(assigned)}")
+
                 for p in range(num_people):
                     if solver.Value(self.shifts[(p, d)]):
                         self.people[p].assign_shift(day_dates[d])
 
-            print("Scheduling complete.")
+            logging.info("Scheduling complete.")
             return self.people
         else:
-            print(f"Solver Status: {solver.StatusName(status)}")
-            print(f"Number of conflicts: {solver.NumConflicts()}")
-            print(f"Branches: {solver.NumBranches()}")
-            print(f"Wall time: {solver.WallTime()}s")
-            print("No feasible solution found.")
+            logging.info(f"Solver Status: {solver.StatusName(status)}")
+            logging.info(f"Number of conflicts: {solver.NumConflicts()}")
+            logging.info(f"Branches: {solver.NumBranches()}")
+            logging.info(f"Wall time: {solver.WallTime()}s")
+            logging.info("No feasible solution found.")
             return None

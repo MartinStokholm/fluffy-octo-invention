@@ -6,7 +6,13 @@ from result_saver import SaveOutput
 from pathlib import Path
 import argparse
 import json
-from utils import ensure_dir_exists, generate_timestamped_filename
+import logging
+from utils import (
+    setup_logging,
+    ensure_dir_exists,
+    generate_timestamped_filename,
+    clear_directory,
+)
 
 
 def parse_arguments():
@@ -35,6 +41,11 @@ def parse_arguments():
         default="output",
         help="Relative directory to save the Excel schedule",
     )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Clear the data and output directories before running",
+    )
     return parser.parse_args()
 
 
@@ -54,9 +65,12 @@ def load_people(filepath):
 
 
 def main():
+    setup_logging()
+
     args = parse_arguments()
     start_date = args.start_date
     weeks = args.weeks
+    isCleanRun = args.clean
 
     BASE_DIR = Path(__file__).parent.resolve()
 
@@ -64,9 +78,16 @@ def main():
     json_output_dir = BASE_DIR / args.json_output_dir
     excel_output_dir = BASE_DIR / args.excel_output_dir
 
+    if isCleanRun:
+        # Clear the directories if --clean flag is set
+        clear_directory(json_output_dir)
+        clear_directory(excel_output_dir)
+
     # Ensure output directories exist
-    ensure_dir_exists(json_output_dir)
-    ensure_dir_exists(excel_output_dir)
+    ensure_dir_exists(
+        json_output_dir / "do-we-exist.txt"
+    )  # Using dummy file to get parent directory
+    ensure_dir_exists(excel_output_dir / "do-we-exist.txt")
 
     # Generate timestamped filenames
     json_output_filename = generate_timestamped_filename(
@@ -80,10 +101,10 @@ def main():
     json_output_path = json_output_dir / json_output_filename
     excel_output_path = excel_output_dir / excel_output_filename
 
-    print(f"Start Date: {start_date.strftime('%Y-%m-%d')}")
-    print(f"Number of Weeks: {weeks}")
-    print(f"JSON Output Path: {json_output_path}")
-    print(f"Excel Output Path: {excel_output_path}")
+    logging.info(f"Start Date: {start_date.strftime('%Y-%m-%d')}")
+    logging.info(f"Number of Weeks: {weeks}")
+    logging.info(f"JSON Output Path: {json_output_path}")
+    logging.info(f"Excel Output Path: {excel_output_path}")
 
     # Load people from people.json (assumed to be in the same directory as main.py)
     people_json_path = BASE_DIR / "input/people.json"
@@ -119,7 +140,7 @@ def main():
     scheduled_people = scheduler.assign_days()
 
     if scheduled_people is None:
-        print("No feasible solution found. Exiting.")
+        logging.error("No feasible solution found. Exiting.")
         return
 
     # Initialize SaveOutput with the desired JSON output path

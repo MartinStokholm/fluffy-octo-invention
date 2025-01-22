@@ -5,6 +5,7 @@ from typing import List
 from dataclasses import asdict
 from person import Person
 from utils import ensure_dir_exists
+import logging
 
 
 class SaveOutput:
@@ -33,8 +34,7 @@ class SaveOutput:
                 "sundays_count": person.sundays_count,
             }
             assignments.append(person_data)
-        ensure_dir_exists(self.output_filepath)
         with self.output_filepath.open("w") as outfile:
             json.dump(assignments, outfile, indent=4)
 
-        print(f"Assignments successfully saved to:\n{self.output_filepath}.")
+        logging.info(f"Assignments successfully saved to:\n{self.output_filepath}.")
