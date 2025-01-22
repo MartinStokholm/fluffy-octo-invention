@@ -58,12 +58,12 @@ class Scheduler:
         # Solve the model
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = 180.0  # Optional time limit
-        solver.parameters.log_search_progress = True
+        solver.parameters.log_search_progress = False
         # solver.parameters.enable_probing = True # DEPRECATED DO NOT USE
         status = solver.Solve(self.model)
 
         if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
-            logging.info("Solution Found:")
+            logging.info("✅ Solution Found!")
 
             # Collect assignments
             assignments = []
@@ -85,12 +85,11 @@ class Scheduler:
                     if solver.Value(self.shifts[(p, d)]):
                         self.people[p].assign_shift(day_dates[d])
 
-            logging.info("Scheduling complete.")
             return self.people
         else:
             logging.info(f"Solver Status: {solver.StatusName(status)}")
             logging.info(f"Number of conflicts: {solver.NumConflicts()}")
             logging.info(f"Branches: {solver.NumBranches()}")
             logging.info(f"Wall time: {solver.WallTime()}s")
-            logging.info("No feasible solution found.")
+            logging.info("❌ No feasible solution found.")
             return None

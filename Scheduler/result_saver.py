@@ -1,16 +1,20 @@
-import json
-import os
-from pathlib import Path
-from typing import List
 from dataclasses import asdict
 from person import Person
-from utils import ensure_dir_exists
+from utils import ensure_dir_exists, get_relative_path
+from pathlib import Path
+from typing import List
+import json
 import logging
 
 
 class SaveOutput:
-    def __init__(self, output_filepath: str = "data/people_assigned.json"):
+    def __init__(
+        self,
+        output_filepath: str = "data/people_assigned.json",
+        base_dir: Path = Path("."),
+    ):
         self.output_filepath = Path(output_filepath)
+        self.base_dir = base_dir
 
     def save(self, people: List[Person]):
         """
@@ -34,7 +38,13 @@ class SaveOutput:
                 "sundays_count": person.sundays_count,
             }
             assignments.append(person_data)
-        with self.output_filepath.open("w") as outfile:
-            json.dump(assignments, outfile, indent=4)
-
-        logging.info(f"Assignments successfully saved to:\n{self.output_filepath}.")
+        try:
+            with self.output_filepath.open("w") as outfile:
+                json.dump(assignments, outfile, indent=4)
+            logging.info(
+                f"💾 Saved to: {get_relative_path(self.output_filepath, self.base_dir)}."
+            )
+        except Exception as e:
+            logging.error(
+                f"⚠️ Failed to save: {get_relative_path(self.output_filepath, self.base_dir)}: {e}"
+            )

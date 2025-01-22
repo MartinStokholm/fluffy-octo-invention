@@ -9,9 +9,11 @@ import json
 import logging
 from utils import (
     setup_logging,
+    setup_output_paths,
     ensure_dir_exists,
     generate_timestamped_filename,
     clear_directory,
+    load_people,
 )
 
 
@@ -49,64 +51,22 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def load_people(filepath):
-    with open(filepath, "r") as file:
-        data = json.load(file)
-    people = []
-    for person_data in data:
-        person = Person(
-            name=person_data["name"],
-            working_day=person_data["working_day"],
-            absence_days=person_data.get("absence_days", []),
-        )
-        person.incompatible_with = person_data.get("incompatible_with", [])
-        people.append(person)
-    return people
-
-
 def main():
-    setup_logging()
-
     args = parse_arguments()
-    start_date = args.start_date
-    weeks = args.weeks
-    isCleanRun = args.clean
 
     BASE_DIR = Path(__file__).parent.resolve()
+    clear_directory(BASE_DIR / "logs", BASE_DIR, is_setup=True)
 
-    # Define output directories based on BASE_DIR
-    json_output_dir = BASE_DIR / args.json_output_dir
-    excel_output_dir = BASE_DIR / args.excel_output_dir
+    # Setup logging
+    setup_logging(args, BASE_DIR)
 
-    if isCleanRun:
-        # Clear the directories if --clean flag is set
-        clear_directory(json_output_dir)
-        clear_directory(excel_output_dir)
+    # Setup output paths
+    json_output_path, excel_output_path = setup_output_paths(args, BASE_DIR)
 
-    # Ensure output directories exist
-    ensure_dir_exists(
-        json_output_dir / "do-we-exist.txt"
-    )  # Using dummy file to get parent directory
-    ensure_dir_exists(excel_output_dir / "do-we-exist.txt")
-
-    # Generate timestamped filenames
-    json_output_filename = generate_timestamped_filename(
-        "people_assigned", start_date, "json"
+    logging.info(
+        f"🔄 {args.weeks} weeks starting on {args.start_date.strftime('%Y-%m-%d')}"
     )
-    excel_output_filename = generate_timestamped_filename(
-        "schedule", start_date, "xlsx"
-    )
-
-    # Define full paths with timestamped filenames
-    json_output_path = json_output_dir / json_output_filename
-    excel_output_path = excel_output_dir / excel_output_filename
-
-    logging.info(f"Start Date: {start_date.strftime('%Y-%m-%d')}")
-    logging.info(f"Number of Weeks: {weeks}")
-    logging.info(f"JSON Output Path: {json_output_path}")
-    logging.info(f"Excel Output Path: {excel_output_path}")
-
-    # Load people from people.json (assumed to be in the same directory as main.py)
+    # Load people from JSON
     people_json_path = BASE_DIR / "input/people.json"
     people = load_people(people_json_path)
 
@@ -134,23 +94,29 @@ def main():
     ]
 
     # Initialize Scheduler
-    scheduler = Scheduler(people, start_date, weeks, constraints)
+    scheduler = Scheduler(
+        people, start_date=args.start_date, weeks=args.weeks, constraints=constraints
+    )
 
     # Assign days (solve the model)
     scheduled_people = scheduler.assign_days()
 
+    # If no feasible solution is found, exit the script
     if scheduled_people is None:
         logging.error("No feasible solution found. Exiting.")
         return
 
-    # Initialize SaveOutput with the desired JSON output path
-    saver = SaveOutput(output_filepath=str(json_output_path))
+    # Initialize SaveOutput with the desired JSON output path and BASE_DIR
+    saver = SaveOutput(output_filepath=str(json_output_path), base_dir=BASE_DIR)
+
     # Save the assignments using SaveOutput
     saver.save(scheduled_people)
 
     # After scheduling, export the results to a spreadsheet
     exporter = ScheduleExporter(
-        json_filepath=str(json_output_path), output_excel=str(excel_output_path)
+        json_filepath=str(json_output_path),
+        output_excel=str(excel_output_path),
+        base_dir=BASE_DIR,
     )
     exporter.export()
 

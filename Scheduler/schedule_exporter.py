@@ -7,8 +7,9 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from dataclasses import dataclass, asdict
-from utils import ensure_dir_exists
+from utils import ensure_dir_exists, get_relative_path
 import logging
+from pathlib import Path
 
 
 @dataclass
@@ -47,14 +48,15 @@ class PersonResult:
 
 
 class ScheduleExporter:
-    def __init__(self, json_filepath: str, output_excel: str):
-        self.json_filepath = json_filepath
-        self.output_excel = output_excel
+    def __init__(self, json_filepath: str, output_excel: str, base_dir: Path):
+        self.json_filepath = Path(json_filepath)
+        self.output_excel = Path(output_excel)
+        self.base_dir = base_dir
         self.people: List[PersonResult] = []
         self.schedule: Dict[str, Dict[str, List[str]]] = {}  # {week: {day: [names]}}
 
     def load_data(self):
-        with open(self.json_filepath, "r") as file:
+        with self.json_filepath.open("r") as file:
             data = json.load(file)
             for person_data in data:
                 person = PersonResult(
@@ -327,8 +329,15 @@ class ScheduleExporter:
 
         # Create Statistics Sheet
         self.create_statistics_sheet(wb)
-        wb.save(self.output_excel)
-        logging.info(f"Schedule spreadsheet exported to:\n{self.output_excel}")
+        try:
+            wb.save(self.output_excel)
+            relative_excel_path = get_relative_path(self.output_excel, self.base_dir)
+            logging.info(f"📊 Exported to: {relative_excel_path}")
+        except Exception as e:
+            relative_excel_path = get_relative_path(self.output_excel, self.base_dir)
+            logging.error(
+                f"⚠️ Failed to export spreadsheet to {relative_excel_path}: {e}"
+            )
 
     def export(self):
         self.load_data()
