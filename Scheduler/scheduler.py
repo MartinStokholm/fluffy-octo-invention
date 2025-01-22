@@ -1,10 +1,10 @@
+import logging
 from typing import List
 from person import Person
 from datetime import datetime, timedelta
 from constraints import Constraint
-from ortools.sat.python import cp_model
 from result_saver import SaveOutput
-import logging
+from ortools.sat.python import cp_model
 
 
 class Scheduler:

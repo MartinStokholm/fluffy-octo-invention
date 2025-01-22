@@ -1,10 +1,10 @@
-from dataclasses import asdict
-from person import Person
-from utils import ensure_dir_exists, get_relative_path
-from pathlib import Path
-from typing import List
 import json
 import logging
+from utils import ensure_dir_exists, get_relative_path
+from person import Person
+from typing import List
+from pathlib import Path
+from dataclasses import asdict
 
 
 class SaveOutput:

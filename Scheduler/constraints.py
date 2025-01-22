@@ -1,9 +1,10 @@
+import logging
+
 from abc import ABC, abstractmethod
-from ortools.sat.python import cp_model
-from datetime import datetime, timedelta
 from typing import List
 from person import Person
-import logging
+from datetime import datetime, timedelta
+from ortools.sat.python import cp_model
 
 
 class Constraint(ABC):
@@ -19,6 +20,85 @@ class Constraint(ABC):
         num_days: int,
     ):
         pass
+
+
+class FixedAssignmentsConstraint(Constraint):
+    """
+    Constraint to assign specific people to fixed holiday dates.
+    This constraint takes precedence over other constraints.
+    """
+
+    def __init__(self, holidays: List[dict], people: List[Person]):
+        """
+        Initialize with a list of holidays.
+        Each holiday is a dict with 'date' and 'people_names'.
+        """
+        self.holidays = holidays
+        self.people = people
+        # Create a mapping from person name to index for quick lookup
+        self.person_name_to_index = {
+            person.name: idx for idx, person in enumerate(people)
+        }
+
+    def apply(
+        self,
+        model: cp_model.CpModel,
+        shifts: dict,
+        people: List[Person],
+        day_dates: List[datetime],
+        day_names: List[str],
+        num_people: int,
+        num_days: int,
+    ):
+        for holiday in self.holidays:
+            holiday_date_str = holiday["date"]
+            holiday_people = holiday["people_names"]
+
+            # Convert holiday_date_str to datetime object
+            holiday_date = datetime.strptime(holiday_date_str, "%Y-%m-%d")
+            try:
+                # Find the index of the holiday date
+                d = day_dates.index(holiday_date)
+            except ValueError:
+                logging.error(
+                    f"Holiday date {holiday_date_str} is out of the scheduling range."
+                )
+                continue
+
+            if len(holiday_people) != 2:
+                logging.error(
+                    f"Holiday {holiday['holiday_name']} does not have exactly two assigned people."
+                )
+                continue
+
+            p_indices = []
+            for name in holiday_people:
+                if name not in self.person_name_to_index:
+                    logging.error(
+                        f"Person '{name}' in holiday '{holiday['holiday_name']}' not found in people list."
+                    )
+                    continue
+                p = self.person_name_to_index[name]
+                p_indices.append(p)
+
+            if len(p_indices) != 2:
+                logging.error(
+                    f"Could not assign all people for holiday '{holiday['holiday_name']}'."
+                )
+                continue
+
+            # Assign the two people to work on the holiday date
+            for p in p_indices:
+                model.Add(shifts[(p, d)] == 1)
+
+            # Ensure that no other person is assigned to work on the holiday date
+            for p in range(num_people):
+                if p not in p_indices:
+                    model.Add(shifts[(p, d)] == 0)
+
+            logging.info(
+                f"📅 Fixed assignment for holiday '{holiday['holiday_name']}' on {holiday_date_str}: {holiday_people}"
+            )
 
 
 class TwoNursesPerDayConstraint(Constraint):

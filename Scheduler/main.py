@@ -1,21 +1,18 @@
-from datetime import datetime
-from scheduler import Scheduler
-from person import Person
-from exporter import SpreadsheetExporter, GraphExporter
-from result_saver import SaveOutput
-from pathlib import Path
-import argparse
 import json
 import logging
+
 from utils import (
+    parse_arguments,
     setup_logging,
     setup_output_paths,
     ensure_dir_exists,
     generate_timestamped_filename,
     clear_directory,
     load_people,
+    load_holidays,
 )
 from constraints import (
+    FixedAssignmentsConstraint,
     TwoNursesPerDayConstraint,
     WorkingDaysConstraint,
     RestPeriodConstraint,
@@ -23,52 +20,12 @@ from constraints import (
     ShiftAllocationBoundsConstraint,
     ShiftBalanceConstraint,
 )
-
-
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="Scheduling Script")
-    parser.add_argument(
-        "--start-date",
-        type=lambda s: datetime.strptime(s, "%Y-%m-%d"),
-        required=True,
-        help="Start date in YYYY-MM-DD format",
-    )
-    parser.add_argument(
-        "--weeks",
-        type=int,
-        required=True,
-        help="Number of weeks to generate schedules for",
-    )
-    parser.add_argument(
-        "--json-output-dir",
-        type=str,
-        default="output/data",
-        help="Relative directory to save the JSON output",
-    )
-    parser.add_argument(
-        "--excel-output-dir",
-        type=str,
-        default="output/spreadsheet",
-        help="Relative directory to save the Excel schedule",
-    ),
-    parser.add_argument(
-        "--graph-output-dir",
-        type=str,
-        default="output/graph",
-        help="Relative directory to save the assignment distribution graph",
-    ),
-    parser.add_argument(
-        "--logging-output-dir",
-        type=str,
-        default="output/logging",
-        help="Relative directory to save the log files",
-    ),
-    parser.add_argument(
-        "--clean",
-        action="store_true",
-        help="Clear the data and output directories before running",
-    )
-    return parser.parse_args()
+from person import Person
+from pathlib import Path
+from datetime import datetime
+from exporter import SpreadsheetExporter, GraphExporter
+from scheduler import Scheduler
+from result_saver import SaveOutput
 
 
 def main():
@@ -85,14 +42,17 @@ def main():
     )
     start_date = args.start_date.strftime("%Y-%m-%d")
 
-    logging.info(f"🔄 {args.weeks} weeks | from: {start_date}")
+    logging.info(f"🔄 {args.weeks} weeks | start date: {start_date}")
 
-    # Load people from JSON
+    # Load people and holidays from JSON
     people_json_path = BASE_DIR / "input/people.json"
+    holidays_json_path = BASE_DIR / "input/holidays.json"
     people = load_people(people_json_path)
+    holidays = load_holidays(holidays_json_path)
 
     # Define constraints
     constraints = [
+        FixedAssignmentsConstraint(holidays=holidays, people=people),
         TwoNursesPerDayConstraint(),
         WorkingDaysConstraint(),
         RestPeriodConstraint(),

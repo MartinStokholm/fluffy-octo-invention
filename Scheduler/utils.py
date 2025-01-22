@@ -1,11 +1,13 @@
+import json
+import shutil
+import logging
+import argparse
+
+from typing import Union, Tuple, List
+from person import Person
 from pathlib import Path
-from typing import Union, Tuple
 from argparse import Namespace
 from datetime import datetime
-import logging
-import shutil
-import json
-from person import Person
 
 
 def setup_logging(args: Namespace, base_dir: Path, logging_output_dir: Path):
@@ -37,7 +39,7 @@ def setup_logging(args: Namespace, base_dir: Path, logging_output_dir: Path):
         ],
     )
 
-    logging.info(f"📝 Logging: {get_relative_path(log_filepath, base_dir)}")
+    logging.info(f"📝 Logging initiated")
 
 
 def setup_output_paths(
@@ -214,3 +216,63 @@ def load_people(filepath):
         person.incompatible_with = person_data.get("incompatible_with", [])
         people.append(person)
     return people
+
+
+def load_holidays(holidays_filepath: Path) -> List[dict]:
+    if not holidays_filepath.exists():
+        logging.error(f"Holidays file not found at: {holidays_filepath}")
+        return []
+    with holidays_filepath.open("r") as file:
+        try:
+            holidays = json.load(file)
+            logging.info(f"📄 Loaded {len(holidays)} holidays from {holidays_filepath}")
+            return holidays
+        except json.JSONDecodeError as e:
+            logging.error(f"Error decoding JSON from holidays file: {e}")
+            return []
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Scheduling Script")
+    parser.add_argument(
+        "--start-date",
+        type=lambda s: datetime.strptime(s, "%Y-%m-%d"),
+        required=True,
+        help="Start date in YYYY-MM-DD format",
+    )
+    parser.add_argument(
+        "--weeks",
+        type=int,
+        required=True,
+        help="Number of weeks to generate schedules for",
+    )
+    parser.add_argument(
+        "--json-output-dir",
+        type=str,
+        default="output/data",
+        help="Relative directory to save the JSON output",
+    )
+    parser.add_argument(
+        "--excel-output-dir",
+        type=str,
+        default="output/spreadsheet",
+        help="Relative directory to save the Excel schedule",
+    ),
+    parser.add_argument(
+        "--graph-output-dir",
+        type=str,
+        default="output/graph",
+        help="Relative directory to save the assignment distribution graph",
+    ),
+    parser.add_argument(
+        "--logging-output-dir",
+        type=str,
+        default="output/logging",
+        help="Relative directory to save the log files",
+    ),
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Clear the data and output directories before running",
+    )
+    return parser.parse_args()
