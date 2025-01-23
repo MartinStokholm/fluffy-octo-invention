@@ -277,7 +277,7 @@ class ShiftBalanceConstraint(Constraint):
         self,
         overall_tolerance: int = 1,
         weekend_tolerance: int = 1,
-        penalty_weight: int = 30,
+        penalty_weight: int = 10,
     ):
         """
         Initialize the ShiftBalanceConstraint with tolerances and penalty weight.
@@ -303,6 +303,26 @@ class ShiftBalanceConstraint(Constraint):
         # Define weekend and weekday days
         weekend_days = {"Friday", "Saturday", "Sunday"}
         weekday_days = {"Monday", "Tuesday", "Wednesday", "Thursday"}
+
+        # ===== Overall Shift Balancing =====
+        # Calculate total shifts per person
+        total_shifts_per_person = []
+        for p in range(num_people):
+            total_shifts = model.NewIntVar(0, num_days, f"total_shifts_p{p}")
+            model.Add(total_shifts == sum(shifts[(p, d)] for d in range(num_days)))
+            total_shifts_per_person.append(total_shifts)
+
+        # Calculate expected shifts per person
+        # Assuming 2 shifts per day
+        total_shifts_required = 2 * num_days
+        expected_shifts = total_shifts_required // num_people
+        min_shifts = max(expected_shifts - self.overall_tolerance, 0)
+        max_shifts = expected_shifts + self.overall_tolerance
+
+        # Enforce total shifts within [min_shifts, max_shifts] for each person
+        for p in range(num_people):
+            model.Add(total_shifts_per_person[p] >= min_shifts)
+            model.Add(total_shifts_per_person[p] <= max_shifts)
 
         # ===== Weekend Shifts Balancing =====
         # Calculate total weekend shifts per person
@@ -436,22 +456,7 @@ class ShiftBalanceConstraint(Constraint):
             "aggregated_metric",
         )
 
-        # Calculate: balance_diff * weight_shift_balance + total_consecutive_weekend_penalties * penalty_weight
-        balance_component = model.NewIntVar(
-            0, 2 * num_days * 10, "balance_component"
-        )  # Assuming max balance_diff * weight_shift_balance
-        model.AddMultiplicationEquality(
-            balance_component, [balance_diff, self.overall_tolerance]
-        )
-
-        penalty_component = model.NewIntVar(
-            0, num_people * num_weeks * self.penalty_weight, "penalty_component"
-        )
-        model.AddMultiplicationEquality(
-            penalty_component,
-            [total_consecutive_weekend_penalties, self.penalty_weight],
-        )
-
+        # Calculate: balance_diff * 1 + total_consecutive_weekend_penalties * penalty_weight
         model.Add(
             aggregated_metric
             == balance_diff * 1

@@ -66,9 +66,9 @@ def main():
 
     # Initialize ShiftBalanceConstraint with desired tolerances and penalty weight
     shift_balance_constraint = ShiftBalanceConstraint(
-        overall_tolerance=2,  # Adjust based on fairness requirements
+        overall_tolerance=1,  # Adjust based on fairness requirements
         weekend_tolerance=1,  # Adjust based on weekend fairness
-        penalty_weight=10,  # Higher weight increases the penalty for consecutive weekends
+        penalty_weight=500,  # Higher weight increases the penalty for consecutive weekends
     )
 
     # Define all constraints, ensuring FixedAssignmentsConstraint is first
