@@ -39,8 +39,8 @@ class SaveOutput:
             }
             assignments.append(person_data)
         try:
-            with self.output_filepath.open("w") as outfile:
-                json.dump(assignments, outfile, indent=4)
+            with self.output_filepath.open("w", encoding="utf-8") as outfile:
+                json.dump(assignments, outfile, indent=4, ensure_ascii=False)
             logging.info(
                 f"💾 Output: {get_relative_path(self.output_filepath, self.base_dir)}."
             )

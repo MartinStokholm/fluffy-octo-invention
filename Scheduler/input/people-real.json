@@ -1,13 +1,13 @@
 [
   {
     "name": "Azkargorta",
-    "incompatible_with": [],
+    "incompatible_with": ["Merino", "Clemente", "Farré"],
     "absence_days": [],
     "working_day": "Wednesday"
   },
   {
     "name": "Bonmati",
-    "incompatible_with": [],
+    "incompatible_with": ["Martínez", "Maroto"],
     "absence_days": [],
     "working_day": "Wednesday"
   },
@@ -25,13 +25,13 @@
   },
   {
     "name": "Maroto",
-    "incompatible_with": [],
+    "incompatible_with": ["Martínez", "Bonmati"],
     "absence_days": [],
     "working_day": "Wednesday"
   },
   {
     "name": "Taltavull",
-    "incompatible_with": [],
+    "incompatible_with": ["Cárdenas", "Corzo", "Sala"],
     "absence_days": [],
     "working_day": "Thursday"
   },
@@ -43,13 +43,13 @@
   },
   {
     "name": "Sala",
-    "incompatible_with": [],
+    "incompatible_with": ["Cárdenas", "Corzo", "Taltavull"],
     "absence_days": [],
     "working_day": "Thursday"
   },
   {
     "name": "Merino",
-    "incompatible_with": [],
+    "incompatible_with": ["Azkargorta", "Clemente", "Farré"],
     "absence_days": [],
     "working_day": "Wednesday"
   },
@@ -67,13 +67,13 @@
   },
   {
     "name": "Clemente",
-    "incompatible_with": [],
+    "incompatible_with": ["Azkargorta", "Merino", "Farré"],
     "absence_days": [],
     "working_day": "Wednesday"
   },
   {
     "name": "Cárdenas",
-    "incompatible_with": [],
+    "incompatible_with": ["Taltavull", "Corzo", "Sala"],
     "absence_days": [],
     "working_day": "Tuesday"
   },
@@ -151,7 +151,7 @@
   },
   {
     "name": "Corzo",
-    "incompatible_with": [],
+    "incompatible_with": ["Cárdenas", "Taltavull", "Sala"],
     "absence_days": [],
     "working_day": "Tuesday"
   },
@@ -169,7 +169,7 @@
   },
   {
     "name": "Martínez",
-    "incompatible_with": [],
+    "incompatible_with": ["Maroto", "Bonmati"],
     "absence_days": [],
     "working_day": "Wednesday"
   }

@@ -204,7 +204,7 @@ def clear_directory(directory_path: Union[str, Path], base_dir: Path, is_setup=F
 
 
 def load_people(filepath):
-    with open(filepath, "r") as file:
+    with filepath.open("r", encoding="utf-8") as file:
         data = json.load(file)
     people = []
     for person_data in data:
@@ -215,6 +215,7 @@ def load_people(filepath):
         )
         person.incompatible_with = person_data.get("incompatible_with", [])
         people.append(person)
+    logging.info(f"📄 Found {len(people)} people")
     return people
 
 
@@ -222,13 +223,13 @@ def load_holidays(holidays_filepath: Path) -> List[dict]:
     if not holidays_filepath.exists():
         logging.error(f"Holidays file not found at: {holidays_filepath}")
         return []
-    with holidays_filepath.open("r") as file:
+    with holidays_filepath.open("r", encoding="utf-8") as file:
         try:
             holidays = json.load(file)
-            logging.info(f"📄 Loaded {len(holidays)} holidays from {holidays_filepath}")
+            logging.info(f"📄 Found {len(holidays)} holidays")
             return holidays
         except json.JSONDecodeError as e:
-            logging.error(f"Error decoding JSON from holidays file: {e}")
+            logging.error(f"⚠️ Error decoding JSON from holidays file: {e}")
             return []
 
 

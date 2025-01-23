@@ -57,7 +57,7 @@ class Scheduler:
     def assign_days(self):
         # Solve the model
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = 180.0  # Optional time limit
+        solver.parameters.max_time_in_seconds = 240  # Optional time limit
         solver.parameters.log_search_progress = False
         # solver.parameters.enable_probing = True # DEPRECATED DO NOT USE
         status = solver.Solve(self.model)

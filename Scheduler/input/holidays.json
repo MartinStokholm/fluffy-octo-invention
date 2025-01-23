@@ -1,7 +1,7 @@
 [
   {
     "holiday_name": "Workers' Day",
-    "people_names": ["Martínez", "López"],
+    "people_names": ["Martínez", "Rodriguez"],
     "date": "2025-05-01"
   },
   {
@@ -11,7 +11,7 @@
   },
   {
     "holiday_name": "New Year",
-    "people_names": ["Gómez", "Florensa"],
+    "people_names": ["Gomez", "Florensa"],
     "date": "2026-01-01"
   }
 ]

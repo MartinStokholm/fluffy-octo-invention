@@ -50,20 +50,44 @@ def main():
     people = load_people(people_json_path)
     holidays = load_holidays(holidays_json_path)
 
-    # Define constraints
+    # Initialize FixedAssignmentsConstraint
+    fixed_assignments = FixedAssignmentsConstraint(holidays=holidays, people=people)
+
+    # Initialize ShiftAllocationBoundsConstraint with fixed shifts
+    shift_allocation_bounds = ShiftAllocationBoundsConstraint(
+        fixed_shifts=fixed_assignments.fixed_shifts_per_person
+    )
+
+    # Initialize RestPeriodConstraint with reference to FixedAssignmentsConstraint
+    rest_period_constraint = RestPeriodConstraint(fixed_assignments=fixed_assignments)
+
+    # Initialize WorkingDaysConstraint with reference to FixedAssignmentsConstraint
+    working_days_constraint = WorkingDaysConstraint(fixed_assignments=fixed_assignments)
+
+    # Initialize ShiftBalanceConstraint with desired tolerances and penalty weight
+    shift_balance_constraint = ShiftBalanceConstraint(
+        overall_tolerance=2,  # Adjust based on fairness requirements
+        weekend_tolerance=1,  # Adjust based on weekend fairness
+        penalty_weight=10,  # Higher weight increases the penalty for consecutive weekends
+    )
+
+    # Define all constraints, ensuring FixedAssignmentsConstraint is first
     constraints = [
-        FixedAssignmentsConstraint(holidays=holidays, people=people),
+        fixed_assignments,  # Add fixed assignments first
         TwoNursesPerDayConstraint(),
-        WorkingDaysConstraint(),
-        RestPeriodConstraint(),
+        working_days_constraint,  # Updated WorkingDaysConstraint
+        rest_period_constraint,  # Updated RestPeriodConstraint
         IncompatiblePeopleConstraint(),
-        ShiftBalanceConstraint(),
-        ShiftAllocationBoundsConstraint(),
+        shift_balance_constraint,  # Updated ShiftBalanceConstraint
+        shift_allocation_bounds,
     ]
 
-    # Initialize Scheduler
+    # Initialize Scheduler with all constraints
     scheduler = Scheduler(
-        people, start_date=args.start_date, weeks=args.weeks, constraints=constraints
+        people=people,
+        start_date=args.start_date,
+        weeks=args.weeks,
+        constraints=constraints,
     )
 
     # Assign days (solve the model)
