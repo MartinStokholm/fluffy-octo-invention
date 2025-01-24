@@ -174,4 +174,4 @@ cython_debug/
 personas.json
 
 # ignore all from output
-output/**/*
+output
