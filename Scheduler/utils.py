@@ -276,4 +276,9 @@ def parse_arguments():
         action="store_true",
         help="Clear the data and output directories before running",
     )
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="Run the script using a test dataset",
+    )
     return parser.parse_args()

@@ -325,56 +325,52 @@ class ShiftBalanceConstraint(Constraint):
             model.Add(total_shifts_per_person[p] <= max_shifts)
 
         # ===== Weekend Shifts Balancing =====
-        # Calculate total weekend shifts per person
-        weekend_total_shifts = []
-        weekend_shifts_per_person = {}
-
+        # Ensure even distribution across Fridays, Saturdays, and Sundays
         for p in range(num_people):
-            weekend_shifts = [
-                shifts[(p, d)] for d in range(num_days) if day_names[d] in weekend_days
+            # Define variables for each weekend day
+            friday_shifts = [
+                shifts[(p, d)] for d in range(num_days) if day_names[d] == "Friday"
             ]
-            total_weekend = model.NewIntVar(
-                0, len(weekend_shifts), f"weekend_shifts_p{p}"
-            )
-            model.Add(total_weekend == sum(weekend_shifts))
-            weekend_total_shifts.append(total_weekend)
-            weekend_shifts_per_person[p] = total_weekend
-
-        # Determine maximum and minimum weekend shifts across all persons
-        weekend_max_shifts = model.NewIntVar(0, num_days, "max_weekend_shifts")
-        weekend_min_shifts = model.NewIntVar(0, num_days, "min_weekend_shifts")
-        model.AddMaxEquality(weekend_max_shifts, weekend_total_shifts)
-        model.AddMinEquality(weekend_min_shifts, weekend_total_shifts)
-        weekend_diff = model.NewIntVar(0, num_days, "weekend_diff")
-        model.Add(weekend_diff == weekend_max_shifts - weekend_min_shifts)
-
-        # ===== Weekday Shifts Balancing =====
-        # Calculate total weekday shifts per person
-        weekday_total_shifts = []
-        weekday_shifts_per_person = {}
-
-        for p in range(num_people):
-            weekday_shifts = [
-                shifts[(p, d)] for d in range(num_days) if day_names[d] in weekday_days
+            saturday_shifts = [
+                shifts[(p, d)] for d in range(num_days) if day_names[d] == "Saturday"
             ]
-            total_weekday = model.NewIntVar(
-                0, len(weekday_shifts), f"weekday_shifts_p{p}"
+            sunday_shifts = [
+                shifts[(p, d)] for d in range(num_days) if day_names[d] == "Sunday"
+            ]
+
+            total_friday = model.NewIntVar(0, len(friday_shifts), f"friday_shifts_p{p}")
+            total_saturday = model.NewIntVar(
+                0, len(saturday_shifts), f"saturday_shifts_p{p}"
             )
-            model.Add(total_weekday == sum(weekday_shifts))
-            weekday_total_shifts.append(total_weekday)
-            weekday_shifts_per_person[p] = total_weekday
+            total_sunday = model.NewIntVar(0, len(sunday_shifts), f"sunday_shifts_p{p}")
 
-        # Determine maximum and minimum weekday shifts across all persons
-        weekday_max_shifts = model.NewIntVar(0, num_days, "max_weekday_shifts")
-        weekday_min_shifts = model.NewIntVar(0, num_days, "min_weekday_shifts")
-        model.AddMaxEquality(weekday_max_shifts, weekday_total_shifts)
-        model.AddMinEquality(weekday_min_shifts, weekday_total_shifts)
-        weekday_diff = model.NewIntVar(0, num_days, "weekday_diff")
-        model.Add(weekday_diff == weekday_max_shifts - weekday_min_shifts)
+            # Sum shifts for each weekend day
+            model.Add(total_friday == sum(friday_shifts))
+            model.Add(total_saturday == sum(saturday_shifts))
+            model.Add(total_sunday == sum(sunday_shifts))
 
-        # ===== Overall Balance Difference =====
-        balance_diff = model.NewIntVar(0, 2 * num_days, "balance_diff")
-        model.Add(balance_diff == weekend_diff + weekday_diff)
+            # Define absolute differences
+            fr_sat_diff = model.NewIntVar(0, num_days, f"fr_sat_diff_p{p}")
+            sat_sun_diff = model.NewIntVar(0, num_days, f"sat_sun_diff_p{p}")
+            fr_sun_diff = model.NewIntVar(0, num_days, f"fr_sun_diff_p{p}")
+
+            model.Add(fr_sat_diff == total_friday - total_saturday)
+            model.Add(sat_sun_diff == total_saturday - total_sunday)
+            model.Add(fr_sun_diff == total_friday - total_sunday)
+
+            # Define absolute difference variables
+            abs_fr_sat_diff = model.NewIntVar(0, num_days, f"abs_fr_sat_diff_p{p}")
+            abs_sat_sun_diff = model.NewIntVar(0, num_days, f"abs_sat_sun_diff_p{p}")
+            abs_fr_sun_diff = model.NewIntVar(0, num_days, f"abs_fr_sun_diff_p{p}")
+
+            model.AddAbsEquality(abs_fr_sat_diff, fr_sat_diff)
+            model.AddAbsEquality(abs_sat_sun_diff, sat_sun_diff)
+            model.AddAbsEquality(abs_fr_sun_diff, fr_sun_diff)
+
+            # Enforce balance within weekend_tolerance
+            model.Add(abs_fr_sat_diff <= self.weekend_tolerance)
+            model.Add(abs_sat_sun_diff <= self.weekend_tolerance)
+            model.Add(abs_fr_sun_diff <= self.weekend_tolerance)
 
         # ======= Constraint: Consecutive Weekend Shifts Penalty =====
 
@@ -383,7 +379,6 @@ class ShiftBalanceConstraint(Constraint):
 
         # Define a binary variable for each person-week indicating a weekend shift
         weekend_shift_vars = {}
-
         for p in range(num_people):
             for week in range(num_weeks):
                 week_start = week * 7
@@ -409,7 +404,6 @@ class ShiftBalanceConstraint(Constraint):
 
         # Add penalties for assigning weekend shifts in consecutive weeks
         consecutive_weekend_penalties = []
-
         for p in range(num_people):
             for week in range(1, num_weeks):
                 prev_week = week - 1
@@ -457,10 +451,13 @@ class ShiftBalanceConstraint(Constraint):
         )
 
         # Calculate: balance_diff * 1 + total_consecutive_weekend_penalties * penalty_weight
+        # First, sum all absolute differences
+        # Note: balance_diff is already captured by the constraints above,
+        # so we don't need to add it explicitly here.
+
         model.Add(
             aggregated_metric
-            == balance_diff * 1
-            + total_consecutive_weekend_penalties * self.penalty_weight
+            == total_consecutive_weekend_penalties * self.penalty_weight
         )
 
         # ======= Setting the Objective =======

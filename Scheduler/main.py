@@ -45,10 +45,15 @@ def main():
     logging.info(f"🔄 {args.weeks} weeks | start date: {start_date}")
 
     # Load people and holidays from JSON
-    people_json_path = BASE_DIR / "input/people.json"
-    holidays_json_path = BASE_DIR / "input/holidays.json"
-    people = load_people(people_json_path)
+    if args.test:
+        people_json_path = BASE_DIR / "input/people-test.json"
+        holidays_json_path = BASE_DIR / "input/holidays-test.json"
+    else:
+        people_json_path = BASE_DIR / "input/people.json"
+        holidays_json_path = BASE_DIR / "input/holidays.json"
+
     holidays = load_holidays(holidays_json_path)
+    people = load_people(people_json_path)
 
     # Initialize FixedAssignmentsConstraint
     fixed_assignments = FixedAssignmentsConstraint(holidays=holidays, people=people)
@@ -66,9 +71,9 @@ def main():
 
     # Initialize ShiftBalanceConstraint with desired tolerances and penalty weight
     shift_balance_constraint = ShiftBalanceConstraint(
-        overall_tolerance=1,  # Adjust based on fairness requirements
-        weekend_tolerance=1,  # Adjust based on weekend fairness
-        penalty_weight=500,  # Higher weight increases the penalty for consecutive weekends
+        overall_tolerance=4,  # Tight tolerance to reduce spread
+        weekend_tolerance=4,  # Tight weekend distribution
+        penalty_weight=200,  # High penalty to discourage consecutive weekends
     )
 
     # Define all constraints, ensuring FixedAssignmentsConstraint is first
