@@ -5,16 +5,25 @@ import seaborn as sns
 import pandas as pd
 import logging
 
+
 from utils import ensure_dir_exists, get_relative_path
 from typing import Dict, List
+from person import Person
 from pathlib import Path
 from openpyxl import Workbook
-from openpyxl.utils import get_column_letter
 from datetime import datetime
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter
 from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
+
+
+@dataclass
+class HolidaysResult:
+    holiday_name: str
+    people_names: List[str]
+    date: List[str]
 
 
 @dataclass
@@ -53,12 +62,19 @@ class PersonResult:
 
 
 class SpreadsheetExporter:
-    def __init__(self, json_filepath: str, output_excel: str, base_dir: Path):
+    def __init__(
+        self,
+        json_filepath: str,
+        output_excel: str,
+        base_dir: Path,
+        holidays: List[HolidaysResult] = [],
+    ):
         self.json_filepath = Path(json_filepath)
         self.output_excel = Path(output_excel)
         self.base_dir = base_dir
         self.people: List[PersonResult] = []
         self.schedule: Dict[str, Dict[str, List[str]]] = {}  # {week: {day: [names]}}
+        self.holidays: List[datetime] = holidays
 
     def load_data(self):
         with self.json_filepath.open("r") as file:
@@ -101,21 +117,43 @@ class SpreadsheetExporter:
             assigned_names = date_schedule[date.strftime("%Y-%m-%d")]
             self.schedule[week_key][day_str] = assigned_names
 
+        # Sort days within each week
+        for week in self.schedule:
+            sorted_days = sorted(
+                self.schedule[week].keys(),
+                key=lambda x: datetime.strptime(x.split()[1].strip("()"), "%m-%d"),
+            )
+            self.schedule[week] = {day: self.schedule[week][day] for day in sorted_days}
+
     def create_schedule_sheet(self, wb: Workbook):
         ws = wb.create_sheet(title="Schedule")
 
         # Define styles
         week_header_font = Font(bold=True, size=14)
         day_header_font = Font(bold=True)
+
         assigned_fill = PatternFill(
-            start_color="90EE90", end_color="90EE90", fill_type="solid"
-        )  # Light Green
+            start_color="FCFCBF", end_color="FCFCBF", fill_type="solid"
+        )  # Weekdays
+
+        holiday_fill = PatternFill(
+            start_color="FCBFFC", end_color="FCBFFC", fill_type="solid"
+        )  # Holidays
+
         weekend_fill = PatternFill(
             start_color="FFD700", end_color="FFD700", fill_type="solid"
         )  # Gold
-        assigned_weekend_fill = PatternFill(
-            start_color="FFA500", end_color="FFA500", fill_type="solid"
-        )  # Orange
+
+        assigned_friday_fill = PatternFill(
+            start_color="87CEEB", end_color="87CEEB", fill_type="solid"
+        )  # Fridays
+        assigned_saturday_fill = PatternFill(
+            start_color="FA8072", end_color="FA8072", fill_type="solid"
+        )  # Saturdays
+        assigned_sunday_fill = PatternFill(
+            start_color="90EE90", end_color="90EE90", fill_type="solid"
+        )  # Sundays
+
         thin_border = Border(
             left=Side(style="thin"),
             right=Side(style="thin"),
@@ -181,14 +219,35 @@ class SpreadsheetExporter:
                 # Extract day name and normalize
                 day_name = day_headers[idx - 1].split()[0].title()
                 # Determine fill based on day and assignment
-                if day_name in {"Friday", "Saturday", "Sunday"}:
-                    if name:
-                        cell.fill = assigned_weekend_fill
-                    else:
-                        cell.fill = weekend_fill
+                day_date_str = day_headers[idx - 1].split()[1].strip("()")
+                day_date = datetime.strptime(day_date_str, "%m-%d")
+
+                # Apply holiday fill if the day is a holiday
+                if any(
+                    datetime.strptime(holiday["date"], "%Y-%m-%d").strftime("%m-%d")
+                    == day_date.strftime("%m-%d")
+                    for holiday in self.holidays
+                ):
+                    cell.fill = holiday_fill
                 else:
-                    if name:
-                        cell.fill = assigned_fill
+                    if day_name == "Friday":
+                        if name:
+                            cell.fill = assigned_friday_fill
+                        else:
+                            cell.fill = weekend_fill
+                    elif day_name == "Saturday":
+                        if name:
+                            cell.fill = assigned_saturday_fill
+                        else:
+                            cell.fill = weekend_fill
+                    elif day_name == "Sunday":
+                        if name:
+                            cell.fill = assigned_sunday_fill
+                        else:
+                            cell.fill = weekend_fill
+                    else:
+                        if name:
+                            cell.fill = assigned_fill
                 # Apply border and alignment
                 cell.border = thin_border
                 cell.alignment = Alignment(
@@ -203,14 +262,35 @@ class SpreadsheetExporter:
                 # Extract day name and normalize
                 day_name = day_headers[idx - 1].split()[0].title()
                 # Determine fill based on day and assignment
-                if day_name in {"Friday", "Saturday", "Sunday"}:
-                    if name:
-                        cell.fill = assigned_weekend_fill
-                    else:
-                        cell.fill = weekend_fill
+                day_date_str = day_headers[idx - 1].split()[1].strip("()")
+                day_date = datetime.strptime(day_date_str, "%m-%d")
+
+                # Apply holiday fill if the day is a holiday
+                if any(
+                    datetime.strptime(holiday["date"], "%Y-%m-%d").strftime("%m-%d")
+                    == day_date.strftime("%m-%d")
+                    for holiday in self.holidays
+                ):
+                    cell.fill = holiday_fill
                 else:
-                    if name:
-                        cell.fill = assigned_fill
+                    if day_name == "Friday":
+                        if name:
+                            cell.fill = assigned_friday_fill
+                        else:
+                            cell.fill = weekend_fill
+                    elif day_name == "Saturday":
+                        if name:
+                            cell.fill = assigned_saturday_fill
+                        else:
+                            cell.fill = weekend_fill
+                    elif day_name == "Sunday":
+                        if name:
+                            cell.fill = assigned_sunday_fill
+                        else:
+                            cell.fill = weekend_fill
+                    else:
+                        if name:
+                            cell.fill = assigned_fill
                 # Apply border and alignment
                 cell.border = thin_border
                 cell.alignment = Alignment(
@@ -256,7 +336,7 @@ class SpreadsheetExporter:
         current_row = 1
 
         # Write Stats Header
-        ws.cell(row=current_row, column=1, value="Statistics")
+        ws.cell(row=current_row, column=1, value="")
         ws.cell(row=current_row, column=1).font = stats_header_font
         current_row += 1
 
@@ -391,11 +471,19 @@ class GraphExporter:
 
         plt.figure(figsize=(20, 10))
         plt.bar(
-            [i - width for i in x], fridays, width, label="Fridays", color="skyblue"
+            [i - width for i in x],
+            fridays,
+            width,
+            label="Fridays",
+            color="#87CEEB",  # skyblue
         )
-        plt.bar(x, saturdays, width, label="Saturdays", color="salmon")
+        plt.bar(x, saturdays, width, label="Saturdays", color="#FA8072")  # salmon
         plt.bar(
-            [i + width for i in x], sundays, width, label="Sundays", color="lightgreen"
+            [i + width for i in x],
+            sundays,
+            width,
+            label="Sundays",
+            color="#90EE90",  # lightgreen
         )
 
         plt.xlabel("Person", fontsize=14)
@@ -410,7 +498,50 @@ class GraphExporter:
         relative_graph_path = get_relative_path(self.graph_path, self.base_dir)
         logging.info(f"💾 Output: {relative_graph_path}")
 
-    def export_graph(self):
+    def export(self):
         self.load_data()
         self.organize_data()
         self.plot_distribution_comparison()
+
+
+class JsonExporter:
+    def __init__(
+        self,
+        output_filepath: str = "data/people_assigned.json",
+        base_dir: Path = Path("."),
+    ):
+        self.output_filepath = Path(output_filepath)
+        self.base_dir = base_dir
+
+    def export(self, people: List[Person]):
+        """
+        Saves the assigned shifts and weekend counts for each person to a JSON file.
+
+        :param people: List of Person instances with assigned shifts.
+        """
+        assignments = []
+        for person in people:
+            assigned_dates = [
+                shift_date.strftime("%Y-%m-%d") for shift_date in person.schedule
+            ]
+            person_data = {
+                "name": person.name,
+                "working_day": person.working_day,
+                "absence_days": person.absence_days,
+                "incompatible_with": person.incompatible_with,
+                "assigned_shifts": assigned_dates,
+                "fridays_count": person.fridays_count,
+                "saturdays_count": person.saturdays_count,
+                "sundays_count": person.sundays_count,
+            }
+            assignments.append(person_data)
+        try:
+            with self.output_filepath.open("w", encoding="utf-8") as outfile:
+                json.dump(assignments, outfile, indent=4, ensure_ascii=False)
+            logging.info(
+                f"💾 Output: {get_relative_path(self.output_filepath, self.base_dir)}."
+            )
+        except Exception as e:
+            logging.error(
+                f"❌ Output: {get_relative_path(self.output_filepath, self.base_dir)}: {e}"
+            )

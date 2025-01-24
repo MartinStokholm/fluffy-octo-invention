@@ -23,11 +23,13 @@ def setup_logging(args: Namespace, base_dir: Path, logging_output_dir: Path):
     :param base_dir: The base directory of the project.
 
     """
+
     # Ensure the 'logs' directory exists
     logs_dir = base_dir / logging_output_dir
-    ensure_dir_exists(
-        logs_dir / "do-we-exist.txt", base_dir, is_setup=True
-    )  # Using dummy file to get parent directory
+    ensure_dir_exists(logs_dir / "do-we-exist.txt", base_dir, is_setup=True)
+
+    if args.clean:
+        clear_directory(args.logging_output_dir, base_dir, is_setup=True)
 
     # Generate timestamped log filename using args.start_date
     log_filename = generate_timestamped_filename("scheduler", args.start_date, "log")

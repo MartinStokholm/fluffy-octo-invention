@@ -79,7 +79,7 @@ def clear_directory(directory_path: Union[str, Path], base_dir: Path, is_setup=F
             shutil.rmtree(path)
             if not is_setup:
                 logging.info(
-                    f"🧹 Cleared directory: {get_relative_path(path, base_dir)}"
+                    f"🧹 Removed directory: {get_relative_path(path, base_dir)}"
                 )
         except Exception as e:
             if not is_setup:
@@ -96,11 +96,9 @@ def clear_directory(directory_path: Union[str, Path], base_dir: Path, is_setup=F
     try:
         path.mkdir(parents=True, exist_ok=True)
         if not is_setup:
-            logging.info(
-                f"🗂️  Recreated empty directory: {get_relative_path(path, base_dir)}"
-            )
+            logging.info(f"🗂️  Created directory: {get_relative_path(path, base_dir)}")
     except Exception as e:
         if not is_setup:
             logging.error(
-                f"⚠️ Failed to recreate directory {get_relative_path(path, base_dir)}: {e}"
+                f"⚠️ Failed to Created directory: {get_relative_path(path, base_dir)}: {e}"
             )

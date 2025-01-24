@@ -1,4 +1,3 @@
-import json
 import logging
 
 from utils import (
@@ -22,20 +21,15 @@ from constraints import (
     ShiftAllocationBoundsConstraint,
     ShiftBalanceConstraint,
 )
-from person import Person
 from pathlib import Path
-from datetime import datetime
-from exporter import SpreadsheetExporter, GraphExporter
+from exporter import SpreadsheetExporter, GraphExporter, JsonExporter
 from scheduler import Scheduler
-from result_saver import SaveOutput
 
 
 def main():
     args = parse_arguments()
 
     BASE_DIR = Path(__file__).parent.resolve()
-    if args.clean:
-        clear_directory(args.logging_output_dir, BASE_DIR, is_setup=True)
 
     # Setup logging
     setup_logging(args, BASE_DIR, args.logging_output_dir)
@@ -56,6 +50,7 @@ def main():
     holidays = load_holidays(holidays_json_path)
     people = load_people(people_json_path)
     start_date = args.start_date.strftime("%Y-%m-%d")
+
     logging.info(f"🔄 {args.weeks} weeks | start date: {start_date}")
 
     # Initialize FixedAssignmentsConstraint
@@ -63,7 +58,9 @@ def main():
 
     # Initialize ShiftAllocationBoundsConstraint with fixed shifts
     shift_allocation_bounds = ShiftAllocationBoundsConstraint(
-        fixed_shifts=fixed_assignments.fixed_shifts_per_person
+        fixed_shifts=fixed_assignments.fixed_shifts_per_person,
+        weekend_shift_tolerance=1,
+        total_shift_tolerance=2,
     )
 
     # Initialize RestPeriodConstraint with reference to FixedAssignmentsConstraint
@@ -74,7 +71,7 @@ def main():
 
     # Initialize ShiftBalanceConstraint with desired tolerances and penalty weight
     shift_balance_constraint = ShiftBalanceConstraint(
-        overall_tolerance=2,
+        overall_tolerance=1,
         weekend_tolerance=1,
         penalty_weight=400,
     )
@@ -107,29 +104,31 @@ def main():
         return
     logging.info("🤓 Solution Found!")
 
-    # Initialize SaveOutput with the desired JSON output path and BASE_DIR
-    saver = SaveOutput(output_filepath=str(json_output_path), base_dir=BASE_DIR)
+    jsonExporter = JsonExporter(
+        output_filepath=str(json_output_path), base_dir=BASE_DIR
+    )
 
-    # Save the assignments using SaveOutput
-    saver.save(scheduled_people)
+    # Export result as JSON
+    jsonExporter.export(scheduled_people)
 
-    # After scheduling, export the results to a spreadsheet
+    # Export spreadsheet from JSON result
     exporter = SpreadsheetExporter(
         json_filepath=str(json_output_path),
         output_excel=str(excel_output_path),
         base_dir=BASE_DIR,
+        holidays=holidays,
     )
     exporter.export()
 
-    # Export the assignment distribution graph
+    # Export weekend distribution graph from JSON result
     graph_exporter = GraphExporter(
         json_filepath=str(json_output_path),
         output_graph=str(graph_output_path),
         base_dir=BASE_DIR,
     )
-    graph_exporter.export_graph()
+    graph_exporter.export()
 
-    logging.info("✅ Scheduling, export, and graph generation completed successfully.")
+    logging.info("✅ Done!")
 
 
 if __name__ == "__main__":

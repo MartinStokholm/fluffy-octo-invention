@@ -98,7 +98,7 @@ class FixedAssignmentsConstraint(Constraint):
                     model.Add(shifts[(p, d)] == 0)
 
             logging.info(
-                f"📅 Fixed assignment for holiday '{holiday.get('holiday_name', 'Unnamed')}' on {holiday_date_str}: {holiday_people}"
+                f"📅 {holiday.get('holiday_name', 'Unnamed')}\t({holiday_date_str})\t➡{holiday_people} "
             )
 
     def is_fixed_shift(self, p: int, d: int) -> bool:
@@ -121,7 +121,7 @@ class TwoNursesPerDayConstraint(Constraint):
         for d in range(num_days):
             model.Add(sum(shifts[(p, d)] for p in range(num_people)) == 2)
 
-        logging.info("🍄 Two Nurses Per Day Constraint Applied Successfully.")
+        logging.info("🍄 Constraint Applied Successfully: 'Two nurses per Day' ")
 
 
 class WorkingDaysConstraint(Constraint):
@@ -162,7 +162,7 @@ class WorkingDaysConstraint(Constraint):
                     if not self.fixed_assignments.is_fixed_shift(p, d):
                         model.Add(shifts[(p, d)] == 0)
 
-        logging.info("🍄 Working Days Constraint Applied Successfully.")
+        logging.info("🍄 Constraint Applied Successfully: 'Working Days'")
 
 
 class RestPeriodConstraint(Constraint):
@@ -198,7 +198,7 @@ class RestPeriodConstraint(Constraint):
                 model.Add(shifts[(p, d + 1)] == 0).OnlyEnforceIf(is_shift_assigned)
                 model.Add(shifts[(p, d + 2)] == 0).OnlyEnforceIf(is_shift_assigned)
 
-        logging.info("🍄 Rest Period Constraint Applied Successfully.")
+        logging.info("🍄 Constraint Applied Successfully: 'Rest Period'")
 
 
 class IncompatiblePeopleConstraint(Constraint):
@@ -225,17 +225,24 @@ class IncompatiblePeopleConstraint(Constraint):
                 for q in incompatible_indices:
                     if q < num_people:  # Ensure valid index
                         model.Add(shifts[(p, d)] + shifts[(q, d)] <= 1)
-        logging.info("🍄 Incompatible People Constraint Applied Successfully.")
+        logging.info("🍄 Constraint Applied Successfully: 'Incompatible People'")
 
 
 class ShiftAllocationBoundsConstraint(Constraint):
-    def __init__(self, fixed_shifts: List[int]):
+    def __init__(
+        self,
+        fixed_shifts: List[int],
+        total_shift_tolerance: int = 2,
+        weekend_shift_tolerance: int = 2,
+    ):
         """
         Initialize with the number of fixed shifts per person.
 
         :param fixed_shifts: A list where each index corresponds to a person and the value is the number of fixed shifts assigned.
         """
         self.fixed_shifts = fixed_shifts
+        self.total_shift_tolerance = total_shift_tolerance
+        self.weekend_shift_tolerance = weekend_shift_tolerance
 
     def apply(
         self,
@@ -250,14 +257,14 @@ class ShiftAllocationBoundsConstraint(Constraint):
         # Calculate total shifts required
         total_shifts_required = num_days * 2  # 2 nurses per day
         expected_shifts = total_shifts_required // num_people
-        tolerance = 2  # Define a tolerance level
+        tolerance = self.total_shift_tolerance
 
         # Calculate weekend bounds
         weekend_days = {"Friday", "Saturday", "Sunday"}
         total_weekend_days = sum(1 for day in day_names if day in weekend_days)
         weekend_shifts_required = total_weekend_days * 2  # 2 nurses per weekend day
         expected_weekend_shifts = weekend_shifts_required // num_people
-        weekend_tolerance = 2  # You can adjust as desired
+        weekend_tolerance = self.weekend_shift_tolerance
 
         for p in range(num_people):
             # ----- Overall Shifts -----
@@ -281,9 +288,7 @@ class ShiftAllocationBoundsConstraint(Constraint):
             model.Add(weekend_shifts >= min_weekend_shifts)
             model.Add(weekend_shifts <= max_weekend_shifts)
 
-        logging.info(
-            "🍄 Shift Allocation Bounds Constraint (with weekend balancing) Applied Successfully."
-        )
+        logging.info("🍄 Constraint Applied Successfully: 'Shift Allocation Bounds'")
 
 
 class ShiftBalanceConstraint(Constraint):
@@ -363,16 +368,16 @@ class ShiftBalanceConstraint(Constraint):
             model.Add(total_saturday == sum(saturday_shifts))
             model.Add(total_sunday == sum(sunday_shifts))
 
-            # Define absolute differences
-            fr_sat_diff = model.NewIntVar(0, num_days, f"fr_sat_diff_p{p}")
-            sat_sun_diff = model.NewIntVar(0, num_days, f"sat_sun_diff_p{p}")
-            fr_sun_diff = model.NewIntVar(0, num_days, f"fr_sun_diff_p{p}")
+            # Define the difference variables with negative lower bounds
+            fr_sat_diff = model.NewIntVar(-num_days, num_days, f"fr_sat_diff_p{p}")
+            sat_sun_diff = model.NewIntVar(-num_days, num_days, f"sat_sun_diff_p{p}")
+            fr_sun_diff = model.NewIntVar(-num_days, num_days, f"fr_sun_diff_p{p}")
 
             model.Add(fr_sat_diff == total_friday - total_saturday)
             model.Add(sat_sun_diff == total_saturday - total_sunday)
             model.Add(fr_sun_diff == total_friday - total_sunday)
 
-            # Define absolute difference variables
+            # Absolute difference variables stay [0..num_days]
             abs_fr_sat_diff = model.NewIntVar(0, num_days, f"abs_fr_sat_diff_p{p}")
             abs_sat_sun_diff = model.NewIntVar(0, num_days, f"abs_sat_sun_diff_p{p}")
             abs_fr_sun_diff = model.NewIntVar(0, num_days, f"abs_fr_sun_diff_p{p}")
@@ -381,7 +386,7 @@ class ShiftBalanceConstraint(Constraint):
             model.AddAbsEquality(abs_sat_sun_diff, sat_sun_diff)
             model.AddAbsEquality(abs_fr_sun_diff, fr_sun_diff)
 
-            # Enforce balance within weekend_tolerance
+            # Now a difference of -2 or +2 can become abs(...)=2
             model.Add(abs_fr_sat_diff <= self.weekend_tolerance)
             model.Add(abs_sat_sun_diff <= self.weekend_tolerance)
             model.Add(abs_fr_sun_diff <= self.weekend_tolerance)
@@ -478,4 +483,4 @@ class ShiftBalanceConstraint(Constraint):
         # Minimize the aggregated metric
         model.Minimize(aggregated_metric)
 
-        logging.info("🍄 Shift Balance Constraint Applied Successfully.")
+        logging.info("🍄 Constraint Applied Successfully: 'Shift Balance'")

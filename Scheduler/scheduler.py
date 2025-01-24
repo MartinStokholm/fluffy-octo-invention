@@ -3,7 +3,6 @@ from typing import List
 from person import Person
 from datetime import datetime, timedelta
 from constraints import Constraint
-from result_saver import SaveOutput
 from ortools.sat.python import cp_model
 
 
