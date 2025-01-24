@@ -2,12 +2,14 @@ import json
 import logging
 
 from utils import (
+    ensure_dir_exists,
+    clear_directory,
+    generate_timestamped_filename,
+)
+from setup import (
     parse_arguments,
     setup_logging,
     setup_output_paths,
-    ensure_dir_exists,
-    generate_timestamped_filename,
-    clear_directory,
     load_people,
     load_holidays,
 )
@@ -32,6 +34,8 @@ def main():
     args = parse_arguments()
 
     BASE_DIR = Path(__file__).parent.resolve()
+    if args.clean:
+        clear_directory(args.logging_output_dir, BASE_DIR, is_setup=True)
 
     # Setup logging
     setup_logging(args, BASE_DIR, args.logging_output_dir)
@@ -40,9 +44,6 @@ def main():
     json_output_path, excel_output_path, graph_output_path, logging_output_path = (
         setup_output_paths(args, BASE_DIR)
     )
-    start_date = args.start_date.strftime("%Y-%m-%d")
-
-    logging.info(f"🔄 {args.weeks} weeks | start date: {start_date}")
 
     # Load people and holidays from JSON
     if args.test:
@@ -54,6 +55,8 @@ def main():
 
     holidays = load_holidays(holidays_json_path)
     people = load_people(people_json_path)
+    start_date = args.start_date.strftime("%Y-%m-%d")
+    logging.info(f"🔄 {args.weeks} weeks | start date: {start_date}")
 
     # Initialize FixedAssignmentsConstraint
     fixed_assignments = FixedAssignmentsConstraint(holidays=holidays, people=people)
@@ -71,9 +74,9 @@ def main():
 
     # Initialize ShiftBalanceConstraint with desired tolerances and penalty weight
     shift_balance_constraint = ShiftBalanceConstraint(
-        overall_tolerance=4,  # Tight tolerance to reduce spread
-        weekend_tolerance=4,  # Tight weekend distribution
-        penalty_weight=200,  # High penalty to discourage consecutive weekends
+        overall_tolerance=2,
+        weekend_tolerance=1,
+        penalty_weight=400,
     )
 
     # Define all constraints, ensuring FixedAssignmentsConstraint is first

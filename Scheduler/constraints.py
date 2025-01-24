@@ -252,24 +252,38 @@ class ShiftAllocationBoundsConstraint(Constraint):
         expected_shifts = total_shifts_required // num_people
         tolerance = 2  # Define a tolerance level
 
+        # Calculate weekend bounds
+        weekend_days = {"Friday", "Saturday", "Sunday"}
+        total_weekend_days = sum(1 for day in day_names if day in weekend_days)
+        weekend_shifts_required = total_weekend_days * 2  # 2 nurses per weekend day
+        expected_weekend_shifts = weekend_shifts_required // num_people
+        weekend_tolerance = 2  # You can adjust as desired
+
         for p in range(num_people):
-            # Adjust expected shifts based on fixed assignments
+            # ----- Overall Shifts -----
             person_fixed_shifts = self.fixed_shifts[p]
             min_shifts = max(expected_shifts - tolerance - person_fixed_shifts, 0)
             max_shifts = expected_shifts + tolerance - person_fixed_shifts
-
-            # Ensure that min_shifts is not greater than max_shifts
             if min_shifts > max_shifts:
                 min_shifts = max_shifts
 
-            # Sum of shifts for person p
             total_shifts = sum(shifts[(p, d)] for d in range(num_days))
-
-            # Apply constraints
             model.Add(total_shifts >= min_shifts)
             model.Add(total_shifts <= max_shifts)
 
-        logging.info("🍄 Shift Allocation Bounds Constraint Applied Successfully.")
+            # ----- Weekend Shifts -----
+            weekend_shifts = sum(
+                shifts[(p, d)] for d in range(num_days) if day_names[d] in weekend_days
+            )
+            min_weekend_shifts = max(expected_weekend_shifts - weekend_tolerance, 0)
+            max_weekend_shifts = expected_weekend_shifts + weekend_tolerance
+
+            model.Add(weekend_shifts >= min_weekend_shifts)
+            model.Add(weekend_shifts <= max_weekend_shifts)
+
+        logging.info(
+            "🍄 Shift Allocation Bounds Constraint (with weekend balancing) Applied Successfully."
+        )
 
 
 class ShiftBalanceConstraint(Constraint):
