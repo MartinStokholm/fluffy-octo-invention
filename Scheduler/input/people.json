@@ -14,7 +14,7 @@
   {
     "name": "Borrell",
     "incompatible_with": [],
-    "absence_days": [],
+    "absence_days": ["2025-11-14", "2025-05-03", "2026-09-01"],
     "working_day": "Thursday"
   },
   {

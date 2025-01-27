@@ -112,6 +112,34 @@ class FixedAssignmentsConstraint(Constraint):
         return (p, d) in self.fixed_assignments
 
 
+class AbsenceDaysConstraint(Constraint):
+    """
+    Constraint to ensure that a person is not assigned to any date found in their
+    'absence_days' list.
+    """
+
+    def apply(
+        self,
+        model: cp_model.CpModel,
+        shifts: dict,
+        people: List[Person],
+        day_dates: List[datetime],
+        day_names: List[str],
+        num_people: int,
+        num_days: int,
+    ):
+        for p in range(num_people):
+            person_absences = set(people[p].absence_days)  # e.g. ["2025-02-01", ...]
+
+            for d in range(num_days):
+                date_str = day_dates[d].strftime("%Y-%m-%d")
+                if date_str in person_absences:
+                    # Person p cannot work on this day
+                    model.Add(shifts[(p, d)] == 0)
+
+        logging.info("🍄 Constraint Applied Successfully: 'Absence Days'")
+
+
 class TwoNursesPerDayConstraint(Constraint):
     """
     Constraint to ensure that there are exactly two nurses working per day.

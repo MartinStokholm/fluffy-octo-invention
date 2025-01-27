@@ -13,6 +13,7 @@ from setup import (
     load_holidays,
 )
 from constraints import (
+    AbsenceDaysConstraint,
     FixedAssignmentsConstraint,
     TwoNursesPerDayConstraint,
     WorkingDaysConstraint,
@@ -76,14 +77,14 @@ def main():
         penalty_weight=400,
     )
 
-    # Define all constraints, ensuring FixedAssignmentsConstraint is first
     constraints = [
-        fixed_assignments,  # Add fixed assignments first
+        fixed_assignments,
         TwoNursesPerDayConstraint(),
-        working_days_constraint,  # Updated WorkingDaysConstraint
-        rest_period_constraint,  # Updated RestPeriodConstraint
+        working_days_constraint,
+        rest_period_constraint,
         IncompatiblePeopleConstraint(),
-        shift_balance_constraint,  # Updated ShiftBalanceConstraint
+        AbsenceDaysConstraint(),
+        shift_balance_constraint,
         shift_allocation_bounds,
     ]
 
