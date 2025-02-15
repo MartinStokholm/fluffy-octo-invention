@@ -1,17 +1,63 @@
 [
   {
-    "holiday_name": "Workers' Day",
-    "people_names": ["Martínez", "Rodriguez"],
+    "holiday_name": "Setmana Santa 1.1",
+    "people_names": ["Nuñez", "Lopez"],
+    "date": "2025-04-18"
+  },
+  {
+    "holiday_name": "Setmana Santa 1.2",
+    "people_names": ["Nuñez", "Lopez"],
+    "date": "2025-04-20"
+  },
+  {
+    "holiday_name": "Setmana Santa 2.1",
+    "people_names": ["Perez", "Alepuz"],
+    "date": "2025-04-19"
+  },
+  {
+    "holiday_name": "Setmana Santa 2.2",
+    "people_names": ["Perez", "Alepuz"],
+    "date": "2025-04-21"
+  },
+  {
+    "holiday_name": "Maig 1.1",
+    "people_names": ["Merino", "Cardenas"],
     "date": "2025-05-01"
   },
+
   {
-    "holiday_name": "Christmas",
-    "people_names": ["Merino", "Adrados"],
-    "date": "2025-12-25"
+    "holiday_name": "Maig 1.2",
+    "people_names": ["Merino", "Cardenas"],
+    "date": "2025-05-03"
   },
   {
-    "holiday_name": "New Year",
-    "people_names": ["Bonmati", "Florensa"],
-    "date": "2026-01-01"
+    "holiday_name": "Maig 2.1",
+    "people_names": ["Rozas", "Florensa"],
+    "date": "2025-05-02"
+  },
+  {
+    "holiday_name": "Maig 2.2",
+    "people_names": ["Rozas", "Florensa"],
+    "date": "2025-05-04"
+  },
+  {
+    "holiday_name": "Sant Joan 1.1",
+    "people_names": ["Martinez", "Rodriguez"],
+    "date": "2025-06-21"
+  },
+  {
+    "holiday_name": "Sant Joan 1.2",
+    "people_names": ["Martinez", "Rodriguez"],
+    "date": "2025-06-23"
+  },
+  {
+    "holiday_name": "Sant Joan 2.1",
+    "people_names": ["Bonmati", "Teixidor"],
+    "date": "2025-06-22"
+  },
+  {
+    "holiday_name": "Sant Joan 2.2",
+    "people_names": ["Bonmati", "Teixidor"],
+    "date": "2025-06-24"
   }
 ]

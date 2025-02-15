@@ -1,20 +1,36 @@
 [
   {
     "name": "Azkargorta",
-    "incompatible_with": ["Merino", "Clemente", "Farré"],
-    "absence_days": [],
-    "working_day": "Wednesday"
+    "incompatible_with": ["Merino", "Clemente", "Farre", "Melendez"],
+    "absence_days": [
+      "2025-06-20",
+      "2025-06-25",
+      "2025-06-26",
+      "2025-06-27",
+      "2025-06-28",
+      "2025-06-29"
+    ],
+    "working_day": "Monday"
   },
   {
     "name": "Bonmati",
-    "incompatible_with": ["Martínez", "Maroto"],
+    "incompatible_with": ["Martinez", "Maroto"],
     "absence_days": [],
     "working_day": "Wednesday"
   },
   {
     "name": "Borrell",
     "incompatible_with": [],
-    "absence_days": ["2025-11-14", "2025-05-03", "2026-09-01"],
+    "absence_days": [
+      "2025-04-17",
+      "2025-06-20",
+      "2025-04-04",
+      "2025-04-05",
+      "2025-04-06",
+      "2025-04-11",
+      "2025-04-12",
+      "2025-04-13"
+    ],
     "working_day": "Thursday"
   },
   {
@@ -25,21 +41,64 @@
   },
   {
     "name": "Maroto",
-    "incompatible_with": ["Martínez", "Bonmati"],
-    "absence_days": [],
+    "incompatible_with": ["Martinez", "Bonmati"],
+    "absence_days": [
+      "2025-04-04",
+      "2025-04-05",
+      "2025-04-06",
+      "2025-05-23",
+      "2025-05-24",
+      "2025-05-25",
+      "2025-06-28",
+      "2025-06-29",
+      "2025-04-11",
+      "2025-04-12",
+      "2025-04-13",
+      "2025-04-14",
+      "2025-04-15",
+      "2025-04-16",
+      "2025-04-17",
+      "2025-04-18",
+      "2025-04-19",
+      "2025-04-20",
+      "2025-04-21"
+    ],
     "working_day": "Wednesday"
   },
   {
     "name": "Taltavull",
     "incompatible_with": ["Cárdenas", "Corzo", "Sala"],
-    "absence_days": [],
+    "absence_days": [
+      "2025-04-10",
+      "2025-04-11",
+      "2025-04-12",
+      "2025-04-13",
+      "2025-04-16",
+      "2025-04-17",
+      "2025-04-18",
+      "2025-04-19",
+      "2025-04-20",
+      "2025-04-21",
+      "2025-05-12",
+      "2025-05-13",
+      "2025-05-14",
+      "2025-05-15",
+      "2025-05-16",
+      "2025-05-17",
+      "2025-05-18",
+      "2025-05-22",
+      "2025-05-23",
+      "2025-06-05",
+      "2025-06-06",
+      "2025-06-07",
+      "2025-06-20",
+      "2025-06-25",
+      "2025-06-26",
+      "2025-06-27",
+      "2025-06-28",
+      "2025-06-29"
+    ],
     "working_day": "Thursday"
-  },
-  {
-    "name": "Adrados",
-    "incompatible_with": [],
-    "absence_days": [],
-    "working_day": "Tuesday"
   },
   {
     "name": "Sala",
@@ -49,8 +108,8 @@
   },
   {
     "name": "Merino",
-    "incompatible_with": ["Azkargorta", "Clemente", "Farré"],
-    "absence_days": [],
+    "incompatible_with": ["Azkargorta", "Clemente", "Farre"],
+    "absence_days": ["2025-04-16"],
     "working_day": "Wednesday"
   },
   {
@@ -67,20 +126,57 @@
   },
   {
     "name": "Clemente",
-    "incompatible_with": ["Azkargorta", "Merino", "Farré"],
+    "incompatible_with": ["Azkargorta", "Merino", "Farre"],
     "absence_days": [],
     "working_day": "Wednesday"
   },
   {
-    "name": "Cárdenas",
+    "name": "Cardenas",
     "incompatible_with": ["Taltavull", "Corzo", "Sala"],
-    "absence_days": [],
+    "absence_days": [
+      "2025-06-05",
+      "2025-06-06",
+      "2025-06-07",
+      "2025-06-08",
+      "2025-04-18",
+      "2025-04-19",
+      "2025-04-20",
+      "2025-04-21",
+      "2025-04-22",
+      "2025-04-23",
+      "2025-04-24",
+      "2025-04-25",
+      "2025-04-26",
+      "2025-04-27",
+      "2025-04-28",
+      "2025-04-29",
+      "2025-04-30",
+      "2025-05-5",
+      "2025-05-6",
+      "2025-05-7",
+      "2025-05-8",
+      "2025-05-9",
+      "2025-05-10",
+      "2025-05-11"
+    ],
     "working_day": "Tuesday"
   },
   {
     "name": "Rozas",
     "incompatible_with": [],
-    "absence_days": [],
+    "absence_days": [
+      "2025-04-11",
+      "2025-04-12",
+      "2025-04-13",
+      "2025-04-14",
+      "2025-04-15",
+      "2025-04-16",
+      "2025-04-17",
+      "2025-04-18",
+      "2025-04-19",
+      "2025-04-20",
+      "2025-04-21"
+    ],
     "working_day": "Thursday"
   },
   {
@@ -91,62 +187,126 @@
   },
   {
     "name": "Danes",
-    "incompatible_with": [],
+    "incompatible_with": ["Mira", "Bailon"],
     "absence_days": [],
     "working_day": "Tuesday"
   },
   {
     "name": "Alberch",
     "incompatible_with": [],
-    "absence_days": [],
-    "working_day": "Monday"
+    "absence_days": [
+      "2025-04-04",
+      "2025-04-05",
+      "2025-04-06",
+      "2025-05-09",
+      "2025-05-10",
+      "2025-05-11",
+      "2025-05-16",
+      "2025-05-17",
+      "2025-05-18",
+      "2025-05-23",
+      "2025-05-24",
+      "2025-05-25",
+      "2025-05-30",
+      "2025-05-31",
+      "2025-06-01",
+      "2025-06-13",
+      "2025-06-14",
+      "2025-06-20",
+      "2025-06-27",
+      "2025-06-28",
+      "2025-06-29"
+    ],
+    "working_day": "Tuesday"
   },
   {
     "name": "Urpi",
     "incompatible_with": [],
-    "absence_days": [],
+    "absence_days": ["2025-06-06", "2025-06-07", "2025-06-08"],
     "working_day": "Monday"
   },
   {
     "name": "Alepuz",
-    "incompatible_with": [],
-    "absence_days": [],
+    "incompatible_with": ["Perez"],
+    "absence_days": [
+      "2025-04-11",
+      "2025-04-12",
+      "2025-04-13",
+      "2025-05-05",
+      "2025-05-06",
+      "2025-05-10",
+      "2025-05-11",
+      "2025-06-02"
+    ],
     "working_day": "Monday"
   },
   {
     "name": "Nuñez",
-    "incompatible_with": [],
+    "incompatible_with": ["Taltavull"],
     "absence_days": [],
     "working_day": "Thursday"
   },
   {
     "name": "Melendez",
-    "incompatible_with": [],
-    "absence_days": [],
+    "incompatible_with": ["Azkargorta"],
+    "absence_days": [
+      "2025-04-12",
+      "2025-04-13",
+      "2025-04-14",
+      "2025-04-15",
+      "2025-04-16",
+      "2025-04-17",
+      "2025-04-18",
+      "2025-04-19",
+      "2025-04-20",
+      "2025-04-21",
+      "2025-05-19",
+      "2025-06-18",
+      "2025-06-19",
+      "2025-06-20",
+      "2025-06-21"
+    ],
     "working_day": "Monday"
   },
   {
     "name": "Mira",
-    "incompatible_with": [],
+    "incompatible_with": ["Bailon", "Danes"],
     "absence_days": [],
     "working_day": "Tuesday"
   },
   {
     "name": "Perez",
-    "incompatible_with": [],
+    "incompatible_with": ["Alepuz"],
     "absence_days": [],
     "working_day": "Monday"
   },
   {
-    "name": "Bailon",
+    "name": "Farre",
     "incompatible_with": [],
-    "absence_days": [],
-    "working_day": "Tuesday"
-  },
-  {
-    "name": "Farré",
-    "incompatible_with": [],
-    "absence_days": [],
+    "absence_days": [
+      "2025-04-16",
+      "2025-04-17",
+      "2025-04-18",
+      "2025-04-19",
+      "2025-04-20",
+      "2025-04-21",
+      "2025-05-19",
+      "2025-06-18",
+      "2025-06-19",
+      "2025-06-20",
+      "2025-06-21",
+      "2025-06-18",
+      "2025-06-19",
+      "2025-06-20",
+      "2025-06-21",
+      "2025-04-30",
+      "2025-04-09",
+      "2025-05-14",
+      "2025-06-11",
+      "2025-04-09",
+      "2025-05-14",
+      "2025-06-11"
+    ],
     "working_day": "Wednesday"
   },
   {
@@ -156,19 +316,13 @@
     "working_day": "Tuesday"
   },
   {
-    "name": "Maso",
-    "incompatible_with": [],
-    "absence_days": [],
-    "working_day": "Monday"
-  },
-  {
     "name": "Rodriguez",
     "incompatible_with": [],
     "absence_days": [],
     "working_day": "Thursday"
   },
   {
-    "name": "Martínez",
+    "name": "Martinez",
     "incompatible_with": ["Maroto", "Bonmati"],
     "absence_days": [],
     "working_day": "Wednesday"

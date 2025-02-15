@@ -2,12 +2,67 @@ import json
 import shutil
 import logging
 import argparse
+import json
 
-from typing import Union, Tuple, List
 from person import Person
+from typing import List, Dict, Union, Tuple
 from pathlib import Path
 from argparse import Namespace
 from datetime import datetime
+
+
+def sanity_check(people: List[Person], holidays: List[Dict]):
+    issues_found = False
+
+    # Check for incompatible people working on the same day
+    for holiday in holidays:
+        holiday_date = holiday["date"]
+        people_names = holiday["people_names"]
+        for i, person_name in enumerate(people_names):
+            person = next(p for p in people if p.name == person_name)
+            incompatible_with = person.incompatible_with
+            for other_person_name in people_names[i + 1 :]:
+                if other_person_name in incompatible_with:
+                    logging.warning(
+                        f"Incompatible people assigned on {holiday_date}: {person_name} and {other_person_name}"
+                    )
+                    issues_found = True
+
+    # Check for absence days conflicts
+    for person in people:
+        name = person.name
+        absence_days = person.absence_days
+        for holiday in holidays:
+            holiday_date = holiday["date"]
+            if holiday_date in absence_days and name in holiday["people_names"]:
+                logging.warning(
+                    f"Person {name} is assigned on their absence day {holiday_date}"
+                )
+                issues_found = True
+
+    # Check for working day conflicts
+    for person in people:
+        name = person.name
+        working_day = person.working_day
+        for holiday in holidays:
+            holiday_date = holiday["date"]
+            holiday_day_name = datetime.strptime(holiday_date, "%Y-%m-%d").strftime(
+                "%A"
+            )
+            if holiday_day_name != working_day and name in holiday["people_names"]:
+                logging.warning(
+                    f"Person {name} is assigned on a non-working day {holiday_date} ({holiday_day_name})"
+                )
+                issues_found = True
+
+    if not issues_found:
+        logging.info(
+            "No issues found in the provided people.json and holidays.json files."
+        )
+    else:
+        logging.warning(
+            "Issues were found in the provided people.json and holidays.json files."
+        )
 
 
 def get_relative_path(path: Path, base_dir: Path) -> str:

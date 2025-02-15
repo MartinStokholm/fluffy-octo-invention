@@ -206,7 +206,7 @@ class RestPeriodConstraint(Constraint):
         self,
         model: cp_model.CpModel,
         shifts: dict,
-        people: List["Person"],  # Assuming Person is defined elsewhere
+        people: List[Person],
         day_dates: List[datetime],
         day_names: List[str],
         num_people: int,
@@ -219,17 +219,28 @@ class RestPeriodConstraint(Constraint):
                 # Reference to the shift variable on day d
                 shift_var = shifts[(p, d)]
 
-                # Create literals for the shift being assigned
-                is_shift_assigned = shift_var
+                # Only enforce if this shift is NOT fixed
+                if not self.fixed_assignments.is_fixed_shift(p, d):
+                    # Create literals for the shift being assigned
+                    is_shift_assigned = shift_var
 
-                # Enforce no work on day d+1 and d+2 if shift on day d is assigned
-                model.Add(shifts[(p, d + 1)] == 0).OnlyEnforceIf(is_shift_assigned)
-                model.Add(shifts[(p, d + 2)] == 0).OnlyEnforceIf(is_shift_assigned)
+                    # Enforce no work on day d+1 and d+2 if shift on day d is assigned
+                    if not self.fixed_assignments.is_fixed_shift(p, d + 1):
+                        model.Add(shifts[(p, d + 1)] == 0).OnlyEnforceIf(
+                            is_shift_assigned
+                        )
+                    if not self.fixed_assignments.is_fixed_shift(p, d + 2):
+                        model.Add(shifts[(p, d + 2)] == 0).OnlyEnforceIf(
+                            is_shift_assigned
+                        )
 
         logging.info("🍄 Constraint Applied Successfully: 'Rest Period'")
 
 
 class IncompatiblePeopleConstraint(Constraint):
+    def __init__(self, fixed_assignments: FixedAssignmentsConstraint):
+        self.fixed_assignments = fixed_assignments
+
     def apply(
         self,
         model: cp_model.CpModel,
@@ -240,19 +251,19 @@ class IncompatiblePeopleConstraint(Constraint):
         num_people: int,
         num_days: int,
     ):
-        for p in range(num_people):
-            person = people[p]
-            incompatible_people = person.incompatible_with
-            incompatible_indices = [
-                idx
-                for idx, other in enumerate(people)
-                if other.name in incompatible_people
-            ]
-
-            for d in range(num_days):
-                for q in incompatible_indices:
-                    if q < num_people:  # Ensure valid index
-                        model.Add(shifts[(p, d)] + shifts[(q, d)] <= 1)
+        for p1 in range(num_people):
+            person1 = people[p1]
+            incompatible_people = person1.incompatible_with
+            for p2 in range(p1 + 1, num_people):
+                person2 = people[p2]
+                if person2.name in incompatible_people:
+                    for d in range(num_days):
+                        if not self.fixed_assignments.is_fixed_shift(
+                            p1, d
+                        ) and not self.fixed_assignments.is_fixed_shift(p2, d):
+                            model.AddBoolOr(
+                                [shifts[(p1, d)].Not(), shifts[(p2, d)].Not()]
+                            )
         logging.info("🍄 Constraint Applied Successfully: 'Incompatible People'")
 
 

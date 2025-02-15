@@ -1,6 +1,7 @@
 import logging
 
 from utils import (
+    sanity_check,
     ensure_dir_exists,
     clear_directory,
     generate_timestamped_filename,
@@ -54,6 +55,9 @@ def main():
 
     logging.info(f"🔄 {args.weeks} weeks | start date: {start_date}")
 
+    # Perform sanity check on the provided people and holidays data
+    sanity_check(people, holidays)
+
     # Initialize FixedAssignmentsConstraint
     fixed_assignments = FixedAssignmentsConstraint(holidays=holidays, people=people)
 
@@ -74,7 +78,11 @@ def main():
     shift_balance_constraint = ShiftBalanceConstraint(
         overall_tolerance=1,
         weekend_tolerance=1,
-        penalty_weight=400,
+        penalty_weight=200,
+    )
+
+    incompatible_people_constraint = IncompatiblePeopleConstraint(
+        fixed_assignments=fixed_assignments
     )
 
     constraints = [
@@ -82,7 +90,7 @@ def main():
         TwoNursesPerDayConstraint(),
         working_days_constraint,
         rest_period_constraint,
-        IncompatiblePeopleConstraint(),
+        incompatible_people_constraint,
         AbsenceDaysConstraint(),
         shift_balance_constraint,
         shift_allocation_bounds,
